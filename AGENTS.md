@@ -35,8 +35,6 @@
 - ❌ 删除文件不经人确认
 - ❌ 改 main 分支保护规则
 - ❌ 改 CI 凭证 / secrets
-- ❌ 修改 `F:/work/mmorpg/`(封存项目)
-- ❌ 读 `F:/work/mmorpg/client/`(继承 mmorpg §9.7)
 - ❌ 写 secret / token / 密码到 git 跟踪文件
 - ❌ 在 main 直接 commit(走 feature 分支)
 - ❌ `kubectl apply` 到生产集群(只能本地 minikube / 用户专门指定的 dev 集群)
@@ -107,7 +105,6 @@ AI 跑出错时:
 - 发现要写 secrets / token 进 git
 - 发现要 sudo / chmod / 关防火墙
 - 发现 build 改坏了别的服务
-- 发现自己即将操作 `F:/work/mmorpg/`
 - 发现自己即将 push 远端
 
 ## 11. 合作分工(默认)

@@ -463,7 +463,6 @@ grpcurl -insecure :8443 ... PushService/Subscribe               # 经 Envoy 接 
 - **不擅自 commit**(用户手动)
 - **不擅自 push**(用户手动)
 - **不操作远端仓库**
-- **不读 `F:/work/mmorpg/client/`**(继承 mmorpg §9.7)
 - **用中文回复**(项目规则)
 - **任务前先查 task tool**(看历史进度)
 
@@ -494,7 +493,6 @@ grpcurl -insecure :8443 ... PushService/Subscribe               # 经 Envoy 接 
 
 - 改 30+ 个文件(可能方向错了)
 - 写 secret 进 git
-- 修改 `F:/work/mmorpg/` 任何文件(封存项目)
 - 即将 push 远端
 - 发现规范文档自相矛盾
 
@@ -622,8 +620,7 @@ gateway-decision.md / protocol-ordering-rules.md。
 2. 不操作远端仓库(`AGENTS.md` §3)
 3. 不擅自 commit / push(`AGENTS.md` §3)
 4. 编码任务前开 plan 模式(`AGENTS.md` §4)— 如果平台不支持 plan 模式,改成"先列动作清单等用户审"
-5. 不读 `F:/work/mmorpg/client/`(继承 mmorpg §9.7)
-6. 不修改 `F:/work/mmorpg/`(封存项目)
+5. 不擅自 commit / push(`AGENTS.md` §3)
 
 **特别提醒** Copilot Chat / Cursor 用户:
 - 把本文件 + `AGENTS.md` 加进 Copilot 的 system instructions / `.cursorrules`

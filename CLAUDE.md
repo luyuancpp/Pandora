@@ -17,11 +17,7 @@
 ```
 F:/work/Pandora/                # 后端(本仓库)
 F:/work/Pandora-Client/         # UE 客户端 + DS(待定名,独立仓库)
-F:/work/mmorpg/                 # ⚠️ 封存项目,只读参考,严禁修改
 ```
-
-**永远不要修改 `F:/work/mmorpg/` 下的任何文件**,那是封存项目。
-**允许从 mmorpg 拷代码**(D2 一次性拷,之后两边独立演化),拷贝清单见 `docs/design/pkg-copy-from-mmorpg.md`。
 
 ## 3. 中文回复
 
@@ -115,7 +111,6 @@ F:/work/mmorpg/                 # ⚠️ 封存项目,只读参考,严禁修改
 
 ## 12. 不要做的事
 
-- ❌ 不要读 `F:/work/mmorpg/client/`(client 子目录始终不动,继承 mmorpg §9.7)
 - ❌ 不要在 main 分支直接开发(走 feature/<name> + PR)
 - ❌ 不要在 docs/design/ 之外随便建 README(集中维护)
 - ❌ 不要 import 第三方 GUI 库到 go 服务(go 服务都是 headless gRPC)
