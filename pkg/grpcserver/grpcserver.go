@@ -54,5 +54,12 @@ func MustNewServer(c config.Server, customMW ...middleware.Middleware) *kgrpc.Se
 		opts = append(opts, kgrpc.Timeout(c.Grpc.Timeout))
 	}
 
+	// gRPC reflection:Kratos transport/grpc.NewServer 默认已自动 reflection.Register(v1 + v1alpha)。
+	// 联调期 `grpcurl :50001 list` / `describe pandora.login.v1.LoginService` 开箱即用,
+	// 不需要在此再调一次(重复 register 会 panic "duplicate service registration")。
+	//
+	// ⚠️ W3 上线前关闭(reflection 暴露 schema,放大攻击面):
+	//   opts = append(opts, kgrpc.DisableReflection())
+	// 后续可在 cfg.Server.Grpc.EnableReflection(默认 false)开关化。
 	return kgrpc.NewServer(opts...)
 }

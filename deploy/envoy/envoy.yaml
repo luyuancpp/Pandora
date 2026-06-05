@@ -1,0 +1,183 @@
+# Pandora Envoy 边缘网关本地开发期配置(W2 ④,2026-06-05)。
+#
+# 职责(详见 docs/design/gateway-decision.md §5):
+#   1. TLS 终止(:8443):客户端 HTTPS / gRPC-Web → Envoy 内部明文 gRPC
+#   2. gRPC-Web → 标准 gRPC 协议转换(envoy.filters.http.grpc_web)
+#   3. CORS(联调用,浏览器联调备用;UE FHttpModule 不强需)
+#   4. 路由:按 gRPC 全路径 /pandora.<X>.v1.<Y>Service/ 分发到 login / push 两个 cluster
+#
+# ⚠️ 协议铁律(详见 docs/design/protocol-ordering-rules.md):
+#   - push.PushService/Subscribe 是 server stream,timeout 必须为 0(永不超时)
+#   - cluster 端 idle_timeout 也设为 0(防上游被回收)
+#
+# W2 不启用的特性(W3+ 加):
+#   - envoy.filters.http.jwt_authn(login 还没发 JWT,加了 100% 拒)
+#   - envoy.filters.http.ext_authz / rate_limit
+#   - mTLS 上行(W3 业务服规模化后再加)
+#
+# 上游协议:**业务服默认明文 HTTP/2(h2c)**,本配置必须显式声明 http2_protocol_options,
+# 否则 Envoy 会用 HTTP/1.1 调后端,gRPC 415 Unsupported Media Type。
+
+admin:
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901
+
+static_resources:
+  listeners:
+  - name: pandora_listener
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 8443
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain:
+                filename: /etc/envoy/cert.pem
+              private_key:
+                filename: /etc/envoy/key.pem
+            alpn_protocols: [ "h2", "http/1.1" ]
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: pandora_hcm
+          codec_type: AUTO
+
+          # 全局 idle / request timeout 放开(server stream 长连接)
+          # 单 route 再按需收紧(login unary 5s)
+          stream_idle_timeout: 0s
+          request_timeout: 0s
+          common_http_protocol_options:
+            idle_timeout: 0s
+
+          access_log:
+          - name: envoy.access_loggers.stdout
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+
+          http_filters:
+          # ⭐ 关键:gRPC-Web 字节流 → 标准 gRPC
+          - name: envoy.filters.http.grpc_web
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb
+
+          # CORS:浏览器联调备用;UE FHttpModule 不走 CORS
+          - name: envoy.filters.http.cors
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+
+          # TODO W3:在 router 之前插 envoy.filters.http.jwt_authn 做鉴权
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+          route_config:
+            name: pandora_routes
+            virtual_hosts:
+            - name: pandora_vh
+              domains: [ "*" ]
+
+              # virtual_host 级 CORS 策略(联调宽松,生产收紧)
+              typed_per_filter_config:
+                envoy.filters.http.cors:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                  allow_origin_string_match:
+                  - safe_regex:
+                      regex: ".*"
+                  allow_methods: "POST, OPTIONS"
+                  allow_headers: "content-type, x-grpc-web, x-user-agent, authorization, x-player-id, grpc-timeout"
+                  expose_headers: "grpc-status, grpc-message, grpc-status-details-bin"
+                  max_age: "600"
+
+              routes:
+              # ----- login(unary,立即完成型,5s 超时)-----
+              - match:
+                  prefix: "/pandora.login.v1.LoginService/"
+                route:
+                  cluster: login_cluster
+                  timeout: 5s
+                  idle_timeout: 60s
+
+              # ----- push(server stream,长连接必须 0 超时)-----
+              - match:
+                  prefix: "/pandora.push.v1.PushService/"
+                route:
+                  cluster: push_cluster
+                  # ⭐ server stream 铁律:timeout=0(否则 Envoy 默认 15s 后断流)
+                  timeout: 0s
+                  idle_timeout: 0s
+
+              # ----- gRPC reflection(联调用,grpcurl list/describe)-----
+              # W2 dev:放行,联调省心
+              # W3 生产:用 ext_authz / direct_response 403 块掉
+              - match:
+                  prefix: "/grpc.reflection.v1.ServerReflection/"
+                route:
+                  cluster: login_cluster   # 任意一个上游都行(reflection 是 server-level)
+                  timeout: 0s
+                  idle_timeout: 0s
+              - match:
+                  prefix: "/grpc.reflection.v1alpha.ServerReflection/"
+                route:
+                  cluster: login_cluster
+                  timeout: 0s
+                  idle_timeout: 0s
+
+  clusters:
+  # ===== login_cluster =====
+  - name: login_cluster
+    type: STRICT_DNS
+    # ⭐ 强制 IPv4：Windows Docker Desktop 上 host.docker.internal 默认返 IPv6，
+    #   envoy 连上去会 cx_connect_fail → upstream connect error。
+    #   Linux 同样用 host-gateway 时 IPv4 才能走通。
+    dns_lookup_family: V4_ONLY
+    connect_timeout: 1s
+    lb_policy: ROUND_ROBIN
+    # ⭐ 上游 h2c:业务服跑的是明文 HTTP/2,不显式声明会用 HTTP/1.1 → gRPC 415
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: login_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                # ⭐ host.docker.internal:Windows / macOS Docker Desktop 默认解析到宿主
+                #   Linux:docker-compose 用 extra_hosts: host-gateway 补,见 docker-compose.dev.yml
+                address: host.docker.internal
+                port_value: 50001
+
+  # ===== push_cluster(server stream,idle 0)=====
+  - name: push_cluster
+    type: STRICT_DNS
+    dns_lookup_family: V4_ONLY   # 同 login_cluster，避 IPv6 解析坐这个坑
+    connect_timeout: 1s
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+        # 上游 idle 也设 0,防 push stream 被 Envoy 主动断
+        common_http_protocol_options:
+          idle_timeout: 0s
+    load_assignment:
+      cluster_name: push_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: host.docker.internal
+                port_value: 50014

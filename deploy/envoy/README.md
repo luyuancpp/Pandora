@@ -1,0 +1,166 @@
+# Pandora Envoy 边缘网关(W2 ④,2026-06-05)
+
+> 本目录:Envoy v1.38.0 本地开发期配置 + 证书占位。
+> 上层设计:[`docs/design/gateway-decision.md`](../../docs/design/gateway-decision.md) §5。
+
+## 目录文件
+
+| 文件 | 入库 | 说明 |
+|---|---|---|
+| `envoy.yaml` | ✅ | Envoy 配置(listener + filters + routes + clusters) |
+| `.gitignore` | ✅ | 屏蔽 `*.pem` `*.key` `*.crt` 入库 |
+| `README.md` | ✅ | 本文 |
+| `cert.pem` | ❌ | mkcert 本机生成 |
+| `key.pem`  | ❌ | mkcert 本机生成 |
+
+## 端口
+
+| 端口 | 用途 | 暴露 |
+|---|---|---|
+| **8443** | 客户端入口(HTTPS / gRPC-Web over HTTP/2 TLS) | 0.0.0.0(本机) |
+| **9901** | Envoy admin(`/ready` `/clusters` `/stats` `/config_dump`) | 0.0.0.0(本机) |
+
+## 上游 cluster(W2 ④)
+
+| cluster | 后端业务服 | 端口 | 协议 | timeout |
+|---|---|---|---|---|
+| `login_cluster` | login | host.docker.internal:50001 | h2c | route 5s |
+| `push_cluster`  | push  | host.docker.internal:50014 | h2c | route 0s(server stream) |
+
+后续业务服上线时,**复制 cluster 块改名 + 改端口 + 加一条 route prefix** 即可。
+
+---
+
+## 1. 证书生成(由 **ChatGPT / Codex** 执行,Claude 不动)
+
+> 前置:已 `mkcert -install`(机器已加入本地 root CA)。
+
+```powershell
+cd e:\work\Pandora\deploy\envoy
+mkcert -cert-file cert.pem -key-file key.pem `
+  localhost 127.0.0.1 host.docker.internal ::1
+```
+
+### 验收
+
+```powershell
+Test-Path cert.pem        # True
+Test-Path key.pem         # True
+
+# 证书 SAN 必须含 localhost + 127.0.0.1(grpcurl :8443 用 localhost 校验)
+mkcert -CAROOT             # 显示本机 CA 目录(信息)
+```
+
+⚠️ **不要** `mkcert localhost` 默认输出(会落到 `~/<cwd>` 而且文件名带域名),**必须**显式 `-cert-file -key-file`。
+
+---
+
+## 2. 启 Envoy(由 **ChatGPT / Codex** 执行)
+
+```powershell
+# 已合并进 deploy/docker-compose.dev.yml,跟基础设施一起起
+cd e:\work\Pandora
+pwsh tools/scripts/dev_up.ps1
+
+# 单独操作 envoy:
+docker compose -f deploy/docker-compose.dev.yml --env-file deploy/env/dev.env up -d envoy
+docker compose -f deploy/docker-compose.dev.yml --env-file deploy/env/dev.env logs -f envoy
+docker compose -f deploy/docker-compose.dev.yml --env-file deploy/env/dev.env restart envoy
+docker compose -f deploy/docker-compose.dev.yml --env-file deploy/env/dev.env stop envoy
+```
+
+### Phase B 验收(Codex 启完 envoy 后,Claude 跑下面命令复查)
+
+```powershell
+# 1. envoy 启动日志(无 cert 找不到 / config error)
+docker logs pandora-envoy --tail 50
+# 期望:"starting main dispatch loop"
+
+# 2. admin 健康
+(Invoke-WebRequest http://127.0.0.1:9901/ready -UseBasicParsing).StatusCode
+# 期望:200(body=LIVE)
+
+# 3. cluster 健康(host_statuses 至少 1 个)
+(Invoke-WebRequest http://127.0.0.1:9901/clusters?format=json -UseBasicParsing).Content `
+  | ConvertFrom-Json `
+  | ForEach-Object cluster_statuses `
+  | Select-Object name, @{n='hosts'; e={$_.host_statuses.Count}}
+# 期望:login_cluster / push_cluster 各 hosts >= 1
+```
+
+---
+
+## 3. 端到端联调(Phase C,Claude 跑)
+
+> 前置:envoy 已启 + login / push 业务服已 `go run` 起来(两个终端各起一个)。
+
+### 3.1 直连 login(基线 — 确认服务本身 OK)
+
+```powershell
+grpcurl -plaintext -d '{\"account\":\"test\",\"password_hash\":\"abc\",\"device_id\":\"d1\"}' `
+  127.0.0.1:50001 pandora.login.v1.LoginService/Login
+```
+
+期望:`{"code":"OK","playerId":"...","sessionToken":"<uuid>","hubDsAddr":"127.0.0.1:7777", ...}`
+
+### 3.2 经 Envoy 测 login(W2 ⑥ 第一项)
+
+```powershell
+grpcurl -insecure -d '{\"account\":\"test\",\"password_hash\":\"abc\",\"device_id\":\"d1\"}' `
+  127.0.0.1:8443 pandora.login.v1.LoginService/Login
+```
+
+期望:同 3.1。grpcurl `-insecure` 跳证书校验(mkcert root 已 install 也可 `-cacert "$(mkcert -CAROOT)\rootCA.pem"`)。
+
+### 3.3 经 Envoy 测 push server stream(W2 ⑥ 第二项)
+
+```powershell
+grpcurl -insecure -max-time 12 -d '{\"session_token\":\"mock\",\"last_seen_ms\":0}' `
+  127.0.0.1:8443 pandora.push.v1.PushService/Subscribe
+```
+
+期望:
+- 立刻收到第一帧 `PushFrame { topic: "pandora.system.notify", payload: "aGVsbG8=" (base64 hello), tsMs, traceId }`
+- 之后每 5s 一帧,12s 内累计 2~3 帧
+- 12s 后 grpcurl 因 `-max-time` 退出(**不是错误**,验证流持续推送有效)
+
+### 3.4 reflection 验证(可选)
+
+```powershell
+grpcurl -insecure 127.0.0.1:8443 list
+# 期望(节选):
+#   grpc.reflection.v1.ServerReflection
+#   pandora.login.v1.LoginService
+# (注意:list 只反映 envoy 路由命中的 cluster 上 reflection 注册的 services,
+#  reflection 路由打到 login_cluster,所以会列出 login 服务 + reflection 本身;
+#  push 的 service list 要直接连 :50014 或单独打 reflection 路由)
+
+grpcurl -plaintext 127.0.0.1:50001 describe pandora.login.v1.LoginService
+grpcurl -plaintext 127.0.0.1:50014 describe pandora.push.v1.PushService
+```
+
+---
+
+## 4. 故障排查速查
+
+| 现象 | 根因 | 修复 |
+|---|---|---|
+| `connection refused :8443` | envoy 没起 / 配置错 | `docker logs pandora-envoy --tail 100` |
+| `no healthy upstream` | 业务服没 `go run` 起 | 在另一终端起 login / push |
+| envoy 反回 415 | 上游 cluster 漏 `http2_protocol_options` | 已在 envoy.yaml 显式配,别删 |
+| push stream 15s 后断 | route 漏 `timeout: 0s` | 已配,别改 |
+| `x509: certificate signed by unknown authority` | mkcert root 没 install,或 grpcurl 没 -insecure | `mkcert -install`(由 Codex)或加 `-insecure` |
+| 证书 SAN 不含 localhost | 生成命令漏 SAN | 重生:`mkcert -cert-file ... localhost 127.0.0.1 host.docker.internal ::1` |
+| 配置改完不生效 | envoy 需重启或 hot reload | `docker compose ... restart envoy` |
+
+---
+
+## 5. W3 待办(本配置遗留)
+
+- [ ] 加 `envoy.filters.http.jwt_authn` 校验 `Authorization: Bearer <jwt>`,sub 注入 `x-jwt-payload-sub` header(push 服务用)
+- [ ] gRPC reflection 路由改 `direct_response: { status: 403 }`(生产闸门)
+- [ ] mTLS 上行(`UpstreamTlsContext` + 业务服 server-side TLS)
+- [ ] 加 `envoy.filters.http.ratelimit`(对接独立 ratelimit service)
+- [ ] CORS `allow_origin_string_match` 收紧到具体域名(去掉 `.*`)
+- [ ] 接 OpenTelemetry tracing collector(对齐 docs/design/infra.md)
+- [ ] 业务服全接入后,clusters 段会拉到 14 个,考虑用 envoy CDS / xDS 动态下发(W4+)

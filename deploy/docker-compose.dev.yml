@@ -168,6 +168,38 @@ services:
       - prometheus
     networks: [pandora-net]
 
+  # ===== Envoy v1.38 边缘网关(W2 ④,2026-06-05)=====
+  # 详见 deploy/envoy/README.md。
+  #
+  # 上游业务服跑在宿主(go run),通过 host.docker.internal 访问:
+  #   - Windows / macOS Docker Desktop:自动解析
+  #   - Linux:extra_hosts 用 host-gateway 显式映射
+  #
+  # 证书(cert.pem / key.pem)由 mkcert 在 deploy/envoy/ 下本机生成(不入库)。
+  envoy:
+    image: envoyproxy/envoy:v1.38-latest
+    container_name: pandora-envoy
+    restart: unless-stopped
+    ports:
+      - "8443:8443"   # 客户端 HTTPS / gRPC-Web 入口
+      - "9901:9901"   # admin(本机 only,生产关闭)
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - ./envoy/cert.pem:/etc/envoy/cert.pem:ro
+      - ./envoy/key.pem:/etc/envoy/key.pem:ro
+    extra_hosts:
+      # Linux / WSL 兼容:让 envoy 容器能通过 host.docker.internal 访问宿主
+      # Windows / macOS Docker Desktop 上写不写都行(默认已有)
+      - "host.docker.internal:host-gateway"
+    command:
+      - -c
+      - /etc/envoy/envoy.yaml
+      - --service-cluster
+      - pandora-edge
+      - --service-node
+      - dev-local
+    networks: [pandora-net]
+
 networks:
   pandora-net:
     name: pandora-net

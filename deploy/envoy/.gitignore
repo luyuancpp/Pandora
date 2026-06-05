@@ -1,0 +1,10 @@
+# Pandora Envoy 本地开发期 — 不入库文件
+#
+# 证书 / 私钥由 mkcert 在本机生成,绝对不能入仓库(违反 AGENTS.md §3 红线)。
+# 配置文件 envoy.yaml 入库,证书路径在配置里写死 /etc/envoy/cert.pem + key.pem。
+
+cert.pem
+key.pem
+*.pem
+*.key
+*.crt

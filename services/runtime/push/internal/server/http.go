@@ -8,9 +8,9 @@
 //   - server stream 在 HTTP/1.1 RESTful 下表达不出来,客户端必须走 gRPC-Web(Envoy 转发)
 //
 // 选择仍起 HTTP server 的原因:
-//   1. /metrics 端口跟 login 对齐(infra.md §6.3 各服务 metrics 端口 51001~51022)
-//   2. Prometheus 配置 deploy/prometheus/prometheus.yml 已固定 51014 抓取目标
-//   3. 给将来运营后台 / 健康检查留一个 RESTful 入口
+//  1. /metrics 端口跟 login 对齐(infra.md §6.3 各服务 metrics 端口 51001~51022)
+//  2. Prometheus 配置 deploy/prometheus/prometheus.yml 已固定 51014 抓取目标
+//  3. 给将来运营后台 / 健康检查留一个 RESTful 入口
 package server
 
 import (
