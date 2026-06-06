@@ -175,6 +175,80 @@ func TestHeartbeatOrphanReturnsStop(t *testing.T) {
 	}
 }
 
+// TestHeartbeatOnAbandonedReturnsStopNoRefresh:abandoned 对局的 DS 若继续心跳(pod release
+// 失败/延迟终止),Heartbeat 必须返回 stop 且**不写回记录**——不刷新 LastHeartbeatMs/TTL,也不
+// 重新 ZAdd active。否则补偿重试会被推迟、BattleTTL 上界被不断刷新(W4 ⑧ Codex 复审 P1)。
+func TestHeartbeatOnAbandonedReturnsStopNoRefresh(t *testing.T) {
+	ctx := context.Background()
+	alloc := &countingAllocator{inner: NewMockGameServerAllocator(testCfg())}
+	uc, repo, mr := newUsecaseWithAlloc(t, alloc)
+	life := &mockLifecycle{failFirst: 1000} // 始终投递失败,abandoned 对局保留在 active 重试
+	uc.SetLifecyclePusher(life)
+
+	if _, err := uc.AllocateBattle(ctx, 7, []uint64{10, 20}, 1, "5v5_ranked"); err != nil {
+		t.Fatalf("allocate: %v", err)
+	}
+	backdate(t, repo, 7) // LastHeartbeatMs=1
+
+	// sweep #1:投递失败 → 标记 abandoned、回收 pod、保留在 active 待重试
+	if err := uc.sweepOnce(ctx); err != nil {
+		t.Fatalf("sweep1: %v", err)
+	}
+
+	// 把 TTL 钉到已知小值,便于检测心跳是否误刷新
+	key := "pandora:ds:battle:{7}"
+	mr.SetTTL(key, 90*time.Second)
+	ttlBefore := mr.TTL(key)
+	if ttlBefore <= 0 {
+		t.Fatalf("precondition: ttl not pinned, got %v", ttlBefore)
+	}
+
+	// abandoned 后 DS 继续心跳:必须返回 stop,且不写回记录
+	res, err := uc.Heartbeat(ctx, 7, "pandora-battle-7", 9, "running", time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("heartbeat: %v", err)
+	}
+	if res.Command != "stop" {
+		t.Fatalf("command = %q, want stop", res.Command)
+	}
+
+	// 记录未被写回:LastHeartbeatMs 仍是回拨值 1(active score = LastHeartbeatMs 也未刷新),
+	// state 仍 abandoned,PlayerCount 未被改成 9
+	got, _, _ := repo.GetBattle(ctx, 7)
+	if got.LastHeartbeatMs != 1 {
+		t.Fatalf("LastHeartbeatMs = %d, want 1 (terminal heartbeat must not write back)", got.LastHeartbeatMs)
+	}
+	if got.State != "abandoned" {
+		t.Fatalf("state = %q, want abandoned", got.State)
+	}
+	if got.PlayerCount == 9 {
+		t.Fatalf("PlayerCount refreshed to 9, terminal record must not be written")
+	}
+
+	// TTL 未被心跳刷新(仍 ≤ 钉住的 90s)
+	if ttlAfter := mr.TTL(key); ttlAfter > ttlBefore {
+		t.Fatalf("TTL refreshed by terminal heartbeat: before=%v after=%v", ttlBefore, ttlAfter)
+	}
+
+	// active score 仍是陈旧值 → 下一轮 sweep 仍会命中重试
+	stale, _ := repo.RangeStaleBattles(ctx, 1000)
+	if len(stale) != 1 || stale[0] != 7 {
+		t.Fatalf("stale = %v, want [7] (active score not refreshed, sweep still retries)", stale)
+	}
+
+	// 下一轮 sweep 仍重试投递(补偿没被心跳推迟)
+	callsBefore := life.calls
+	if err := uc.sweepOnce(ctx); err != nil {
+		t.Fatalf("sweep2: %v", err)
+	}
+	if life.calls != callsBefore+1 {
+		t.Fatalf("sweep2 publish calls = %d, want %d (retry continues)", life.calls, callsBefore+1)
+	}
+	if alloc.releases != 1 {
+		t.Fatalf("pod released %d times, want exactly 1 (no re-release)", alloc.releases)
+	}
+}
+
 func TestListBattles(t *testing.T) {
 	ctx := context.Background()
 	uc, _ := newUsecase(t)

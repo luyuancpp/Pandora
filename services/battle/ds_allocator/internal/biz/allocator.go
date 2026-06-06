@@ -15,6 +15,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/luyuancpp/pandora/pkg/errcode"
@@ -24,6 +25,12 @@ import (
 	"github.com/luyuancpp/pandora/services/battle/ds_allocator/internal/conf"
 	"github.com/luyuancpp/pandora/services/battle/ds_allocator/internal/data"
 )
+
+// errHeartbeatTerminal 是 Heartbeat 在镜像已是终态(ended/abandoned)时,
+// 从乐观锁回调里返回的哨兵错误:中止写回(不刷新 LastHeartbeatMs / TTL / active score),
+// 由 Heartbeat 捕获后转成 stop 指令。保证 abandoned 后 DS 继续心跳不会推迟补偿重试、
+// 不会刷新 BattleTTL 上界(W4 ⑧ Codex 复审 P1)。
+var errHeartbeatTerminal = errors.New("heartbeat on terminal battle")
 
 // 战斗 DS 状态常量(对应 proto string state 字段)。
 const (
@@ -161,6 +168,11 @@ type HeartbeatResult struct {
 
 // Heartbeat 处理 DS 上报(单向 unary,DS 每 5s 调)。刷新 last_heartbeat_ms + 状态。
 // 镜像不存在(孤儿 DS)→ 返回 stop 指令让其自行停机。
+//
+// 已是终态(ended/abandoned)的镜像:直接返回 stop,且**不写回记录**——不刷新
+// LastHeartbeatMs / TTL,也不重新 ZAdd active。否则 abandoned 后仍在心跳的 DS(pod
+// release 失败 / 延迟终止)会不断推迟 sweep 补偿重试并刷新 BattleTTL 上界,使 active
+// 重新可能无限堆积(W4 ⑧ Codex 复审 P1)。
 func (u *AllocatorUsecase) Heartbeat(ctx context.Context, matchID uint64, podName string, playerCount int32, state string, tsMs int64) (*HeartbeatResult, error) {
 	if matchID == 0 {
 		return nil, errcode.New(errcode.ErrInvalidArg, "match_id required")
@@ -168,22 +180,31 @@ func (u *AllocatorUsecase) Heartbeat(ctx context.Context, matchID uint64, podNam
 	now := time.Now().UnixMilli()
 
 	err := u.repo.UpdateBattleWithLock(ctx, matchID, updateMaxRetry, func(b *dsv1.BattleStorageRecord) error {
+		// 已是终态(ended/abandoned):中止写回(哨兵错误),不刷新 TTL/active,令 DS 停机
+		if b.State == stateEnded || b.State == stateAbandoned {
+			return errHeartbeatTerminal
+		}
 		b.LastHeartbeatMs = now
 		b.PlayerCount = playerCount
-		// 已是终态(ended/abandoned)不被心跳改回 running
-		if b.State != stateEnded && b.State != stateAbandoned && state != "" {
+		if state != "" {
 			b.State = state
 		}
 		return nil
 	}, u.battleTTL())
 
 	if err != nil {
-		if errcode.As(err) == errcode.ErrDSPodNotFound {
+		switch {
+		case errors.Is(err, errHeartbeatTerminal):
+			// 终态 DS:不写回、通知停机,补偿重试与 TTL 上界不受影响
+			plog.With(ctx).Infow("msg", "heartbeat_terminal_stop", "match_id", matchID, "pod", podName)
+			return &HeartbeatResult{Command: commandStop}, nil
+		case errcode.As(err) == errcode.ErrDSPodNotFound:
 			// 孤儿 DS:无镜像,通知停机
 			plog.With(ctx).Warnw("msg", "heartbeat_orphan_ds", "match_id", matchID, "pod", podName)
 			return &HeartbeatResult{Command: commandStop}, nil
+		default:
+			return nil, err
 		}
-		return nil, err
 	}
 	return &HeartbeatResult{Command: commandNone}, nil
 }
