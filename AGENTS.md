@@ -37,7 +37,7 @@
 - ❌ `kubectl apply` 到生产集群(只能本地 minikube / 用户专门指定的 dev 集群)
 - ❌ `docker push` 到 registry(交给人)
 
-## 4. AI 写代码前必做
+## 4. AI 写代码 / 改业务逻辑前必做
 
 1. 开 **plan 模式**(EnterPlanMode),列文件清单和动作
 2. 给人审
@@ -46,7 +46,20 @@
 5. 把项目内验证结果交给 ChatGPT / Codex,由 ChatGPT / Codex 输出 `git status` / `diff --stat` / commit message 建议
 6. 等人确认是否由 ChatGPT / Codex commit
 
-**不要**直接动手,**不要**改超出 plan 范围的文件。
+适用范围:
+- 后端 go 业务代码、UE C++ 业务骨架、proto、核心 yaml、脚本、测试逻辑、架构 / 服务设计文档等会影响项目行为或长期决策的改动
+- 大范围重构、跨服务一致性调整、安全 / 权限 / 数据一致性相关改动
+
+**纯 ops / 收尾 / 环境执行类任务可以不开 plan,由 ChatGPT / Codex 直接做**,以节省 token 和减少等待。包括:
+- `git status` / `diff --stat` / `git diff` 摘要 / commit message 建议
+- 按 Claude 系模型或用户给出的命令跑 build / test / lint / docker compose 配置检查,并汇报结果
+- 检查本机工具版本、端口占用、容器状态、日志片段、环境就绪情况
+- 根据已审过的方案做本地证书 / Docker 镜像 / 环境辅助操作;涉及安装工具、改系统环境、信任证书、启动较重服务时仍需用户明确批准
+- 文档整理 / 调研结论整理 / 验证结果归档等不改变业务逻辑的辅助工作
+
+纯 ops 执行时仍然必须遵守 §3 禁令、§8 失败报告、§10 红线和 §11.1 分工。发现任务实际会触碰业务实现、proto、核心配置或 30+ 文件时,立刻停止并重新走 plan。
+
+对适用 plan 的任务:**不要**直接动手,**不要**改超出 plan 范围的文件。
 
 ## 5. 决策记录
 
@@ -131,6 +144,7 @@ AI 跑出错时:
 - 改本机开发环境和证书信任 / 生成本地证书 / 拉 Docker 镜像 / 启停本地环境(仅在用户明确批准后)
 - 做环境就绪确认,把结果反馈给 Claude 系模型 / 用户
 - 输出 git status / diff --stat / commit message 建议
+- 对纯 ops / 收尾 / 环境执行类任务,可以不开 plan 直接执行;一旦发现需要实现业务逻辑、修改 proto / 核心配置、或扩大到 30+ 文件,立即停止并交回 plan 流程
 - 在用户明确说"帮我 commit"时执行 git commit
 - ChatGPT / Codex 做完后必须把改动范围、验证结果、剩余未处理项告诉 Claude 系模型,由 Claude 系模型审核确认
 - ChatGPT / Codex 不实现业务代码,不处理业务逻辑细节;只做审核、问题分析、辅助执行和收尾。发现问题时,生成可直接粘贴给 Claude 系模型的问题反馈。

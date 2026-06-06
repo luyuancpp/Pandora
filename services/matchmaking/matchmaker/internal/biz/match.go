@@ -18,6 +18,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -79,7 +80,7 @@ const (
 // MatchUsecase 是 matchmaker 业务逻辑核心。
 type MatchUsecase struct {
 	repo      data.MatchRepo
-	reader    TeamReader   // 可为 nil(本机不起 team 时跳过校验)
+	reader    TeamReader // 可为 nil(本机不起 team 时跳过校验)
 	pusher    MatchEventPusher
 	allocator DSAllocator
 	idGen     IDGenerator
@@ -127,13 +128,13 @@ func (u *MatchUsecase) StartMatch(ctx context.Context, ticketID, teamID, captain
 	}
 
 	ticket := &matchv1.MatchTicketStorageRecord{
-		TicketId:      ticketID,
-		TeamId:        teamID,
-		CaptainId:     captainID,
-		Members:       members,
-		AvgMmr:        avgMMR,
-		EnqueuedAtMs:  time.Now().UnixMilli(),
-		MatchId:       0,
+		TicketId:     ticketID,
+		TeamId:       teamID,
+		CaptainId:    captainID,
+		Members:      members,
+		AvgMmr:       avgMMR,
+		EnqueuedAtMs: time.Now().UnixMilli(),
+		MatchId:      0,
 	}
 	if err := u.repo.AddTicket(ctx, ticket, u.ticketTTL()); err != nil {
 		u.rollbackClaims(ctx, claimed)
@@ -506,18 +507,31 @@ func (u *MatchUsecase) formMatch(ctx context.Context, sideA, sideB []*matchv1.Ma
 		CreatedAtMs:       now,
 		ConfirmDeadlineMs: deadline,
 	}
-	if err := u.repo.CreateMatch(ctx, match, u.matchTTL()); err != nil {
-		return err
-	}
 
-	// 预留票据:移出队列 + 写 match_id,防止被下一轮 matchOnce 重复撮合
+	// 一致性流程(先预留票据,再建 match):
+	//   1. 逐张预留票据(移出队列 + 写 match_id),防止下一轮 matchOnce 重复撮合
+	//   2. 任一票据预留失败 → 把已预留的票据全部退回队列(补偿),不建 match,返回错误
+	//   3. 全部预留成功后才 CreateMatch;若 CreateMatch 仍失败 → 同样回滚全部预留
+	// 终态只有两种:票据全在 match 里且已出队,或全部退回队列且无残留 match——
+	// 不会出现"match 已建但部分票据仍在 queue"的不一致。
+	reserved := make([]*matchv1.MatchTicketStorageRecord, 0, len(sideA)+len(sideB))
 	for _, side := range [][]*matchv1.MatchTicketStorageRecord{sideA, sideB} {
 		for _, t := range side {
 			t.MatchId = matchID
 			if err := u.repo.ReserveTicket(ctx, t, u.ticketTTL()); err != nil {
-				plog.With(ctx).Warnw("msg", "reserve_ticket_failed", "ticket_id", t.TicketId, "err", err)
+				u.rollbackReservations(ctx, reserved)
+				plog.With(ctx).Errorw("msg", "reserve_ticket_failed", "match_id", matchID,
+					"ticket_id", t.TicketId, "err", err)
+				return fmt.Errorf("reserve ticket %d: %w", t.TicketId, err)
 			}
+			reserved = append(reserved, t)
 		}
+	}
+
+	if err := u.repo.CreateMatch(ctx, match, u.matchTTL()); err != nil {
+		u.rollbackReservations(ctx, reserved)
+		plog.With(ctx).Errorw("msg", "create_match_failed", "match_id", matchID, "err", err)
+		return err
 	}
 
 	// 推 FOUND → CONFIRM 进度给全体(原则 3 例外:含发起方)
@@ -525,6 +539,17 @@ func (u *MatchUsecase) formMatch(ctx context.Context, sideA, sideB []*matchv1.Ma
 	u.pushProgress(ctx, matchID, stageConfirm, members, "", "")
 	plog.With(ctx).Infow("msg", "match_found", "match_id", matchID, "players", len(members))
 	return nil
+}
+
+// rollbackReservations 把一批已预留的票据退回队列(清掉 match_id,保留 enqueued_at_ms),
+// 用于 formMatch 中途失败时的补偿,避免票据停留在"已出队但无 match"的悬空状态。
+func (u *MatchUsecase) rollbackReservations(ctx context.Context, reserved []*matchv1.MatchTicketStorageRecord) {
+	for _, t := range reserved {
+		t.MatchId = 0
+		if err := u.repo.RequeueTicket(ctx, t, u.ticketTTL()); err != nil {
+			plog.With(ctx).Warnw("msg", "rollback_reservation_failed", "ticket_id", t.TicketId, "err", err)
+		}
+	}
 }
 
 // expireOnce 扫描 active ZSET,把确认期已超时的 match 标记失败。

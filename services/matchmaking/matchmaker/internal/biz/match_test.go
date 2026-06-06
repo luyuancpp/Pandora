@@ -3,6 +3,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -275,5 +276,100 @@ func TestExpireOnce_Timeout_Fails(t *testing.T) {
 	left, _ := f.repo.RangeQueueTickets(ctx)
 	if len(left) != 2 {
 		t.Fatalf("queue = %v, want 2 tickets requeued", left)
+	}
+}
+
+// ── ReserveTicket 失败一致性 ──────────────────────────────────────────────────
+
+// faultyReserveRepo 包装真实 repo,在第 failOnCall 次 ReserveTicket 调用上注入失败,
+// 用于验证 formMatch 中途预留失败时的补偿(退回队列、不留残缺 match)。
+type faultyReserveRepo struct {
+	data.MatchRepo
+	calls      int
+	failOnCall int // 第几次 ReserveTicket 调用返回错误(1-based);0 表示全部失败
+}
+
+func (r *faultyReserveRepo) ReserveTicket(ctx context.Context, ticket *matchv1.MatchTicketStorageRecord, ttl time.Duration) error {
+	r.calls++
+	if r.failOnCall == 0 || r.calls == r.failOnCall {
+		return errors.New("injected reserve failure")
+	}
+	return r.MatchRepo.ReserveTicket(ctx, ticket, ttl)
+}
+
+// formMatch 预留到一半失败 → 已预留票据全部退回队列,不建 match(无悬空残留)。
+func TestFormMatch_ReserveFailsMidway_RollsBackNoMatch(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, 999)
+	for i := uint64(1); i <= 10; i++ {
+		f.seedTicket(t, ctx, 100+i, []uint64{i}, 1000)
+	}
+
+	// 第 2 次 ReserveTicket 失败:第 1 张已预留,应被回滚退回队列
+	faulty := &faultyReserveRepo{MatchRepo: f.repo, failOnCall: 2}
+	uc := NewMatchUsecase(faulty, nil, f.pusher, NewStubDSAllocator("127.0.0.1:7777"), &fakeIDGen{next: 999}, f.cfg)
+
+	sideA := make([]*matchv1.MatchTicketStorageRecord, 0, 5)
+	sideB := make([]*matchv1.MatchTicketStorageRecord, 0, 5)
+	for i := uint64(1); i <= 10; i++ {
+		ticket, found, err := f.repo.GetTicket(ctx, 100+i)
+		if err != nil || !found {
+			t.Fatalf("get ticket %d: found=%v err=%v", 100+i, found, err)
+		}
+		if i <= 5 {
+			sideA = append(sideA, ticket)
+		} else {
+			sideB = append(sideB, ticket)
+		}
+	}
+
+	if err := uc.formMatch(ctx, sideA, sideB); err == nil {
+		t.Fatal("formMatch should fail when ReserveTicket fails")
+	}
+
+	// match 不应被创建(预留失败发生在 CreateMatch 之前)
+	if _, found, _ := f.repo.GetMatch(ctx, 999); found {
+		t.Fatal("match 999 should not exist after reserve failure")
+	}
+	// 全部 10 张票据应仍在队列(第 1 张回滚退回 + 其余从未预留)
+	left, _ := f.repo.RangeQueueTickets(ctx)
+	if len(left) != 10 {
+		t.Fatalf("queue = %d tickets, want 10 (consistent, no orphan)", len(left))
+	}
+	// 每张票据 match_id 必须清零,否则下一轮会被当作已撮合跳过/或重复处理
+	for i := uint64(1); i <= 10; i++ {
+		ticket, found, _ := f.repo.GetTicket(ctx, 100+i)
+		if !found {
+			t.Fatalf("ticket %d gone", 100+i)
+		}
+		if ticket.MatchId != 0 {
+			t.Fatalf("ticket %d match_id = %d, want 0", 100+i, ticket.MatchId)
+		}
+	}
+}
+
+// matchOnce 在 ReserveTicket 持续失败时不留"已建 match + 票据仍在队列"的不一致(防重复撮合)。
+func TestMatchOnce_ReserveFails_NoOrphanMatch(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t, 999)
+	for i := uint64(1); i <= 10; i++ {
+		f.seedTicket(t, ctx, 100+i, []uint64{i}, 1000)
+	}
+
+	faulty := &faultyReserveRepo{MatchRepo: f.repo, failOnCall: 0} // 全部失败
+	uc := NewMatchUsecase(faulty, nil, f.pusher, NewStubDSAllocator("127.0.0.1:7777"), &fakeIDGen{next: 999}, f.cfg)
+
+	if err := uc.matchOnce(ctx); err != nil {
+		t.Fatalf("matchOnce should swallow form errors and continue: %v", err)
+	}
+
+	// 没有任何 match 被建出来
+	if _, found, _ := f.repo.GetMatch(ctx, 999); found {
+		t.Fatal("no match should be created when all reserves fail")
+	}
+	// 全部票据仍在队列,可被后续轮次正常重试
+	left, _ := f.repo.RangeQueueTickets(ctx)
+	if len(left) != 10 {
+		t.Fatalf("queue = %d tickets, want 10 (all retryable)", len(left))
 	}
 }
