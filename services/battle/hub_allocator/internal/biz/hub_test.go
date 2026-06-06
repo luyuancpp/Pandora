@@ -23,6 +23,9 @@ type fakeRepo struct {
 	active      map[string]int64 // pod → last_heartbeat_ms
 	assignments map[uint64]*hubv1.HubAssignmentStorageRecord
 	teamShards  map[uint64]string
+
+	// setAssignErr 非 nil 时,SetAssignment 直接返回该错误(测试注入失败用)。
+	setAssignErr error
 }
 
 func newFakeRepo() *fakeRepo {
@@ -132,6 +135,9 @@ func (f *fakeRepo) GetAssignment(_ context.Context, playerID uint64) (*hubv1.Hub
 func (f *fakeRepo) SetAssignment(_ context.Context, rec *hubv1.HubAssignmentStorageRecord, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.setAssignErr != nil {
+		return f.setAssignErr
+	}
 	f.assignments[rec.PlayerId] = proto.Clone(rec).(*hubv1.HubAssignmentStorageRecord)
 	return nil
 }
@@ -369,6 +375,63 @@ func TestTransferHub_NotInHub(t *testing.T) {
 	}
 	if errcode.As(err) != errcode.ErrHubTransferFailed {
 		t.Fatalf("want ErrHubTransferFailed, got %d", errcode.As(err))
+	}
+}
+
+// TestTransferHub_SetAssignmentFailRollback 覆盖 SetAssignment 失败场景:
+// 顺序为 reserve 新 → SetAssignment → release 旧;SetAssignment 失败时应回滚新分片占位,
+// 且旧分片 player_count 与旧 assignment 都保持原状(玩家仍在旧 hub,无悬挂状态)。
+func TestTransferHub_SetAssignmentFailRollback(t *testing.T) {
+	uc, repo, _ := newTestUsecase(500, 3)
+	ctx := context.Background()
+
+	r1, err := uc.AssignHub(ctx, 1001, "global", 0) // 落在 shard 1
+	if err != nil {
+		t.Fatalf("assign err: %v", err)
+	}
+	oldPod := r1.HubPodName
+	targetPod := "pandora-hub-global-2"
+
+	// 注入 SetAssignment 失败
+	repo.mu.Lock()
+	repo.setAssignErr = errcode.New(errcode.ErrInternal, "redis down")
+	repo.mu.Unlock()
+
+	_, terr := uc.TransferHub(ctx, 1001, 2) // 点名传送到 shard 2
+	if terr == nil {
+		t.Fatal("want transfer error when SetAssignment fails")
+	}
+
+	// 1. 新分片占位已回滚 → player_count 0
+	if got := repo.playerCount(targetPod); got != 0 {
+		t.Fatalf("target shard seat not rolled back, count=%d want 0", got)
+	}
+	// 2. 旧分片 player_count 保持 1(未被提前扣减)
+	if got := repo.playerCount(oldPod); got != 1 {
+		t.Fatalf("old shard count drifted, count=%d want 1", got)
+	}
+	// 3. 旧 assignment 仍指向旧 pod(玩家没被悬挂)
+	a, found, _ := repo.GetAssignment(ctx, 1001)
+	if !found || a.HubPodName != oldPod {
+		t.Fatalf("assignment should stay on old pod: found=%v pod=%v", found, a.GetHubPodName())
+	}
+
+	// 4. 修复后重试可正常传送
+	repo.mu.Lock()
+	repo.setAssignErr = nil
+	repo.mu.Unlock()
+	tr, rerr := uc.TransferHub(ctx, 1001, 2)
+	if rerr != nil {
+		t.Fatalf("retry transfer err: %v", rerr)
+	}
+	if tr.NewHubPodName != targetPod {
+		t.Fatalf("retry should move to %s, got %s", targetPod, tr.NewHubPodName)
+	}
+	if got := repo.playerCount(oldPod); got != 0 {
+		t.Fatalf("after successful transfer old shard want 0, got %d", got)
+	}
+	if got := repo.playerCount(targetPod); got != 1 {
+		t.Fatalf("after successful transfer new shard want 1, got %d", got)
 	}
 }
 

@@ -49,6 +49,10 @@ type LoginConf struct {
 	// Locator W3 ⑤ 联动:登录成功后调 PlayerLocatorService.SetLocation(state=LOGIN_PENDING)。
 	// addr 为空 → 不调(便于本机不起 locator 也能跑通 login)。
 	Locator LocatorClientConf `yaml:"locator,omitempty" json:"locator,omitempty"`
+
+	// Hub W4 ⑥ 联动:登录成功后调 HubAllocatorService.AssignHub 拿真实 hub_ds_addr + hub_ticket。
+	// addr 为空 → 不调,回退自签 hub 票据 + MockHubDSAddr(便于本机不起 hub_allocator 也能跑通 login)。
+	Hub HubClientConf `yaml:"hub,omitempty" json:"hub,omitempty"`
 }
 
 // LocatorClientConf 是 login 调 player_locator 的客户端参数。
@@ -56,6 +60,16 @@ type LocatorClientConf struct {
 	// Addr player_locator gRPC 端口(默认 127.0.0.1:50006)。
 	// 留空 → 不调 locator,Login 走 fallback(仅 Warn 日志)。
 	Addr string `yaml:"addr,omitempty" json:"addr,omitempty"`
+}
+
+// HubClientConf 是 login 调 hub_allocator 的客户端参数(W4 ⑥)。
+type HubClientConf struct {
+	// Addr hub_allocator gRPC 端口(默认 127.0.0.1:50021)。
+	// 留空 → 不调 hub_allocator,Login 回退自签 hub 票据 + MockHubDSAddr。
+	Addr string `yaml:"addr,omitempty" json:"addr,omitempty"`
+
+	// Region 传给 AssignHub 的大厅区服(空 = 让 hub_allocator 选最空分片)。
+	Region string `yaml:"region,omitempty" json:"region,omitempty"`
 }
 
 // JWTConf 是 login 签发 SessionToken / DSTicket 的 JWT 参数。

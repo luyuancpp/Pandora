@@ -3,7 +3,7 @@
 // 职责(docs/design/go-services.md §2.12):大厅 DS 分片调度。
 //   - AssignHub:玩家进大厅,按 region + 队友 + 最空分片选一个 hub DS,签 hub DSTicket
 //   - ReleaseHub:玩家离开大厅,退分片占位
-//   - TransferHub:跨分片传送,先占新分片再退旧分片,重签票据
+//   - TransferHub:跨分片传送,先占新分片再切归属,最后退旧分片,重签票据
 //   - ListHubs:运维/调试查询分片负载
 //   - Heartbeat:Hub DS 每 5s 主动上报(单向 unary),刷新在线数 + 心跳时刻
 //   - RunHeartbeatSweep:后台扫描 active ZSET,心跳超时 → 标记 draining 停止分配(不变量 §4)
@@ -168,7 +168,7 @@ type TransferResult struct {
 	TicketExpMs   int64
 }
 
-// TransferHub 跨分片传送:先占新分片(失败不动旧分片),再退旧分片,重签票据。
+// TransferHub 跨分片传送:先占新分片(失败不动旧分片),再切归属到新分片,最后退旧分片占位,重签票据。
 func (u *HubUsecase) TransferHub(ctx context.Context, playerID uint64, targetHubID uint64) (*TransferResult, error) {
 	if playerID == 0 {
 		return nil, errcode.New(errcode.ErrInvalidArg, "player_id required")
@@ -201,8 +201,6 @@ func (u *HubUsecase) TransferHub(ctx context.Context, playerID uint64, targetHub
 		return nil, errcode.New(errcode.ErrHubTransferFailed,
 			"reserve target shard %s failed: %v", target.HubPodName, rerr)
 	}
-	// 退旧分片
-	u.releaseFromShard(ctx, assignment.HubPodName)
 
 	now := time.Now().UnixMilli()
 	newAssignment := &hubv1.HubAssignmentStorageRecord{
@@ -214,10 +212,16 @@ func (u *HubUsecase) TransferHub(ctx context.Context, playerID uint64, targetHub
 		TeamId:       assignment.TeamId,
 		AssignedAtMs: now,
 	}
+	// 在退旧分片之前先把归属切到新分片(顺序:reserve 新 → SetAssignment → release 旧)。
+	// 这样 SetAssignment 失败时只需回滚新占位,旧分片 player_count 与旧 assignment 仍一致,
+	// 玩家保持在旧 hub(不会出现「旧 assignment 指向旧 pod 但旧 pod 计数已减 1」的悬挂状态)。
 	if serr := u.repo.SetAssignment(ctx, newAssignment, u.assignTTL()); serr != nil {
-		u.releaseFromShard(ctx, target.HubPodName) // 回滚新占位
+		u.releaseFromShard(ctx, target.HubPodName) // 回滚新占位,旧分片不动
 		return nil, serr
 	}
+	// 归属已切到新分片,再退旧分片占位(退位幂等,失败仅 Warn 不影响已切换的归属)
+	u.releaseFromShard(ctx, assignment.HubPodName)
+
 	plog.With(ctx).Infow("msg", "hub_transferred",
 		"player_id", playerID, "from", assignment.HubPodName, "to", target.HubPodName)
 	return u.transferResult(ctx, playerID, target)

@@ -124,8 +124,16 @@ func main() {
 		}
 	}()
 
+	// hub_allocator 客户端(W4 ⑥):addr 为空 → 跳过,Login 回退自签 hub 票据
+	hubAssigner, hubConn, hubMode := mustBuildHubAssigner(&cfg, helper)
+	defer func() {
+		if hubConn != nil {
+			_ = hubConn.Close()
+		}
+	}()
+
 	// 6. biz + service 装配
-	loginUC := biz.NewLoginUsecase(accountRepo, sessionRepo, locatorNotifier, sf, cfg.Login.MockHubDSAddr, signer, verifier)
+	loginUC := biz.NewLoginUsecase(accountRepo, sessionRepo, locatorNotifier, hubAssigner, sf, cfg.Login.MockHubDSAddr, cfg.Login.Hub.Region, signer, verifier)
 	ticketUC := biz.NewTicketUsecase(signer, verifier, jtiRepo)
 	svc := service.NewLoginService(loginUC, ticketUC)
 
@@ -141,6 +149,7 @@ func main() {
 		"session_repo", repoEnabled(sessionRepo != nil),
 		"jti_repo", repoEnabled(jtiRepo != nil),
 		"locator_notifier", locatorMode,
+		"hub_assigner", hubMode,
 		"jwt_issuer", cfg.Login.JWT.Issuer,
 		"jwt_audience", cfg.Login.JWT.Audience,
 		"jwt_session_ttl", cfg.Login.JWT.SessionTTL.String(),
@@ -244,6 +253,21 @@ func mustBuildLocatorNotifier(cfg *conf.Config, h kratosHelper) (data.LocationNo
 	conn := grpcclient.MustDialInsecure(addr)
 	h.Infow("msg", "locator_dial_ok", "addr", addr)
 	return data.NewGrpcLocationNotifier(conn), conn, "grpc"
+}
+
+// mustBuildHubAssigner 按 cfg.Login.Hub.Addr 决定是否拨号到 hub_allocator(W4 ⑥)。
+// addr 空 → 返回 nil assigner(Login 回退自签 hub 票据 + MockHubDSAddr);
+// 拨号失败 → panic(grpcclient.MustDialInsecure 内部 panic,与 locator 语义一致)。
+func mustBuildHubAssigner(cfg *conf.Config, h kratosHelper) (data.HubAssigner, locatorConnLike, string) {
+	addr := cfg.Login.Hub.Addr
+	if addr == "" {
+		h.Warnw("msg", "hub_allocator_disabled_in_config",
+			"hint", "set login.hub.addr to 127.0.0.1:50021 to assign real hub shard + ticket")
+		return nil, nil, "disabled"
+	}
+	conn := grpcclient.MustDialInsecure(addr)
+	h.Infow("msg", "hub_allocator_dial_ok", "addr", addr, "region", cfg.Login.Hub.Region)
+	return data.NewGrpcHubAssigner(conn), conn, "grpc"
 }
 
 // kratosHelper 是 *klog.Helper 的简化接口,避免 main.go 导出泛型。

@@ -63,3 +63,10 @@ login:
   # addr 留空 → 不调 locator(login 仍可独立跑;hub DS 接入后由 hub 上报 HUB 状态)。
   locator:
     addr: "127.0.0.1:50006"
+
+  # W4 ⑥(2026-06-06):登录成功后调 HubAllocatorService.AssignHub 拿真实 hub_ds_addr + hub_ticket。
+  # addr 留空 → 不调 hub_allocator(login 回退自签 hub 票据 + mock_hub_ds_addr,可独立联调)。
+  # region 空 → 让 hub_allocator 选最空分片。
+  hub:
+    addr: "127.0.0.1:50021"
+    region: ""

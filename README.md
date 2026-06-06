@@ -87,7 +87,7 @@ go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 
 ```powershell
 # 编译当前已启用 module(完整口径见 CLAUDE.md §4.1 / go.work)
-go build ./pkg/... ./proto/... ./services/account/login/... ./services/account/player/... ./services/runtime/push/... ./services/runtime/player_locator/... ./services/matchmaking/team/... ./services/matchmaking/matchmaker/... ./services/battle/ds_allocator/... ./services/battle/battle_result/...
+go build ./pkg/... ./proto/... ./services/account/login/... ./services/account/player/... ./services/runtime/push/... ./services/runtime/player_locator/... ./services/matchmaking/team/... ./services/matchmaking/matchmaker/... ./services/battle/ds_allocator/... ./services/battle/hub_allocator/... ./services/battle/battle_result/...
 
 # 启动 login(W2)
 go run ./services/account/login/cmd/login -conf services/account/login/etc/login-dev.yaml
