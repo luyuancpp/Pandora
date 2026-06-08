@@ -60,7 +60,7 @@ services:
 
   # ===== Zookeeper(给 Kafka 用)=====
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.7.1
+    image: confluentinc/cp-zookeeper:7.9.7
     container_name: pandora-zookeeper
     restart: unless-stopped
     ports:
@@ -80,7 +80,7 @@ services:
 
   # ===== Kafka 3.7(KRaft 模式坑多,先用 ZK 模式稳)=====
   kafka:
-    image: confluentinc/cp-kafka:7.7.1
+    image: confluentinc/cp-kafka:7.9.7
     container_name: pandora-kafka
     restart: unless-stopped
     depends_on:
