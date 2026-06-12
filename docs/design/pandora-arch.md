@@ -13,15 +13,8 @@
 
 ## 2. 双仓库结构
 
-```
-GitHub:
-├── github.com/luyuancpp/Pandora           # 后端(go)+ proto + docs + deploy
-└── github.com/luyuancpp/Pandora-Client       # UE 5.7 客户端 + 大厅 DS + 战斗 DS
-
-本地:
-├── F:/work/Pandora/                       # 后端工作目录
-└── C:/work/Pandora/                       # UE 工作目录(D4 已初始化)
-```
+- 后端仓库:go 服务 + proto + docs + deploy
+- UE 仓库:UE 5.7 客户端 + 大厅 DS + 战斗 DS
 
 **协作纪律**:
 - proto **source of truth 在 Pandora 后端仓库**(`Pandora/proto/`)

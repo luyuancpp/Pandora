@@ -4,7 +4,7 @@
 > **登录 → 拉/分配 Hub DS → 进大厅 → 匹配 → 拉/分配 Battle DS → 进战斗 → 结算 → 回大厅**。
 >
 > 本文是设计/契约层；本地 Agones 环境搭建与 apply 命令见 [`deploy/k8s/agones/README.md`](../../deploy/k8s/agones/README.md)。
-> UE 侧代码在独立仓库 `Pandora-Client`（本地 `C:\work\Pandora`），命名一律 **Pandora**。
+> UE 侧代码在独立仓库 `Pandora-Client`，命名一律 **Pandora**。
 
 ---
 

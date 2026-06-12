@@ -54,6 +54,20 @@ func TestBuildProducerConfig_PartialTimeoutsOverrideAndValidate(t *testing.T) {
 	}
 }
 
+func TestBuildProducerConfig_IdempotentDefaultsRetry(t *testing.T) {
+	c := buildProducerConfig(config.KafkaConfig{
+		Brokers:    []string{"127.0.0.1:9093"},
+		Idempotent: true,
+	})
+
+	if err := c.Validate(); err != nil {
+		t.Fatalf("Validate() with idempotent default retry err=%v, want nil", err)
+	}
+	if c.Producer.Retry.Max < 1 {
+		t.Fatalf("Retry.Max=%d want >=1", c.Producer.Retry.Max)
+	}
+}
+
 // newTestProducer 构造一个不依赖 broker 的 KeyOrderedProducer,
 // producer 字段用 sarama/mocks 注入,consistent 用 4 个虚拟 partition。
 func newTestProducer(t *testing.T, mp sarama.SyncProducer) *KeyOrderedProducer {

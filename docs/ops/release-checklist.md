@@ -21,7 +21,7 @@
 
 ```powershell
 pwsh tools/scripts/release_preflight.ps1 `
-  -UeGameIni C:\work\Pandora\Config\DefaultGame.ini `
+  -UeGameIni <UE工程路径>\Config\DefaultGame.ini `
   -BackendConfigDir E:\work\Pandora\services `
   -ConfigGlob '*-prod.yaml' `
   -EnvoyCert <生产证书 cert.pem 路径> `

@@ -128,7 +128,7 @@ kubectl create -f deploy/k8s/agones/40-gameserverallocation-example.yaml -o yaml
 占位镜像**不会**向 ds_allocator / hub_allocator 发 Heartbeat（那是 Pandora 业务心跳，
 经 gRPC unary 每 5s，与 Agones SDK health 无关，详见 `docs/design/ds-arch.md` §0.2）。
 
-- 真 UE Pandora Hub DS / Battle DS（`C:\work\Pandora`，独立仓库）按
+- 真 UE Pandora Hub DS / Battle DS（独立仓库）按
   `docs/design/agones-dev.md` 的「DS 心跳上报契约」实现后，心跳链路 + locator HUB/BATTLE
   上报闭环才能端到端跑通。
 - **UE DS 就绪前用 stub 脚本先验后端心跳 / sweep / locator 闭环**

@@ -22,7 +22,7 @@ pwsh tools/scripts/import_dev_ca.ps1
 ```
 
 脚本会(幂等、**不碰共享引擎目录**):
-1. 把本目录公开 CA 复制到 **UE 客户端工程** `C:\work\Pandora\Config\Certificates\pandora-dev-rootCA.pem`;
+1. 把本目录公开 CA 复制到 **UE 客户端工程** `<UE工程路径>\Config\Certificates\pandora-dev-rootCA.pem`;
 2. 确保客户端 `Config/DefaultEngine.ini` 有 `[SSL] DebuggingCertificatePath` 指向它;
 3. 若历史上往引擎 `cacert.pem` 追加过 dev CA,从备份还原(撤销污染)。
 

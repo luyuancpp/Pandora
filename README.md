@@ -105,11 +105,6 @@ grpcurl -insecure -d '{"account":"test","password_hash":"abc","device_id":"d1"}'
   localhost:8443 pandora.login.v1.LoginService/Login
 ```
 
-## 关联仓库
-
-- **后端(本仓库)**:`https://github.com/luyuancpp/Pandora.git`
-- **UE 客户端 + DS**:(待定,暂用 `Pandora-Client` 占位)
-
 ## License
 
 MIT,见 [LICENSE](./LICENSE)。

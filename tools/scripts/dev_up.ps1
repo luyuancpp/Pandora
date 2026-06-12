@@ -61,8 +61,8 @@ Write-Host "[4/4] Waiting for healthy..." -ForegroundColor Yellow
 $timeout = 120  # 秒
 $elapsed = 0
 $step = 5
-function Get-ComposePsJson {
-    $lines = @(docker compose -f $ComposeFile --env-file $EnvFile ps --format json)
+function Get-ComposePsStatus {
+    $lines = @(docker compose -f $ComposeFile --env-file $EnvFile ps --format '{{.Name}}	{{.State}}	{{.Health}}')
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERR] docker compose ps failed" -ForegroundColor Red
         exit 1
@@ -70,22 +70,27 @@ function Get-ComposePsJson {
 
     if ($lines.Count -eq 0) { return @() }
 
-    $text = ($lines -join "`n").Trim()
-    if ($text.StartsWith("[")) {
-        return @($text | ConvertFrom-Json)
-    }
-
     $items = @()
     foreach ($line in $lines) {
-        if ($line -and $line.Trim() -ne "") {
-            $items += ConvertFrom-Json -InputObject $line
+        if (-not $line -or $line.Trim() -eq "") { continue }
+
+        $parts = $line -split "`t", 3
+        if ($parts.Count -lt 2) {
+            Write-Host "[ERR] docker compose ps output unexpected: $line" -ForegroundColor Red
+            exit 1
+        }
+
+        $items += [pscustomobject]@{
+            Name   = $parts[0]
+            State  = $parts[1]
+            Health = if ($parts.Count -ge 3) { $parts[2] } else { "" }
         }
     }
     return $items
 }
 
 while ($elapsed -lt $timeout) {
-    $unhealthy = Get-ComposePsJson |
+    $unhealthy = Get-ComposePsStatus |
         Where-Object {
             ($_.Health -and $_.Health -ne "healthy") -or
             (-not $_.Health -and $_.State -ne "running")

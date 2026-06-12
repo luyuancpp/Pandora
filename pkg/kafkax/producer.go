@@ -70,9 +70,16 @@ func buildProducerConfig(cfg config.KafkaConfig) *sarama.Config {
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
 	c.Producer.Retry.Max = cfg.RetryMax
-	c.Producer.Retry.Backoff = cfg.RetryBackoff.Std()
+	if c.Producer.Retry.Max <= 0 {
+		c.Producer.Retry.Max = 3
+	}
+	if d := cfg.RetryBackoff.Std(); d > 0 {
+		c.Producer.Retry.Backoff = d
+	}
 	c.Producer.RequiredAcks = sarama.WaitForAll
-	c.ChannelBufferSize = cfg.ChannelBuffer
+	if cfg.ChannelBuffer > 0 {
+		c.ChannelBufferSize = cfg.ChannelBuffer
+	}
 	c.Producer.Compression = cfg.ParseCompression()
 	c.Producer.Idempotent = cfg.Idempotent
 	c.Net.MaxOpenRequests = 1
@@ -115,14 +122,17 @@ func NewKeyOrderedProducer(cfg config.KafkaConfig, topic string) (*KeyOrderedPro
 			New: func() any { return make([]byte, 0, 1024) },
 		},
 	}
+	if p.partitionCnt <= 0 {
+		p.partitionCnt = 4
+	}
 
 	// 初始 partition 注入哈希环
-	for i := int32(0); i < cfg.PartitionCnt; i++ {
+	for i := int32(0); i < int32(p.partitionCnt); i++ {
 		p.consistent.AddPartition(i)
 	}
 
 	klog.Infof("[kafkax] producer ready: topic=%s partitions=%d idempotent=%v",
-		topic, cfg.PartitionCnt, cfg.Idempotent)
+		topic, p.partitionCnt, cfg.Idempotent)
 	return p, nil
 }
 

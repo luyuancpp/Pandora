@@ -103,7 +103,12 @@ function Get-RunningProcess($svc) {
     $expectedExe = Join-Path $BinDir "$($svc.Name).exe"
     $actualExe = $null
     try { $actualExe = $proc.Path } catch { $actualExe = $null }
-    if (-not $actualExe -or ([System.IO.Path]::GetFullPath($actualExe) -ne [System.IO.Path]::GetFullPath($expectedExe))) {
+    if ($actualExe -and ([System.IO.Path]::GetFullPath($actualExe) -ne [System.IO.Path]::GetFullPath($expectedExe))) {
+        Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
+        return $null
+    }
+
+    if (-not $actualExe -and $proc.ProcessName -ne $svc.Name) {
         Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
         return $null
     }
