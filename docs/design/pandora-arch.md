@@ -303,3 +303,4 @@ Client A          Hub DS                Client B (在 A 50 米内)
 | TLS/发布 | 2026-06-10 | **生产连接 ② TLS 使用公网 CA + 真实域名;dev mkcert 自签只通过 DebuggingCertificatePath 叠加公开 dev CA** | 玩家设备默认信任公网 CA,零配置握手;dev 的 mkcert 信任问题不带到生产。详见 `gateway-decision.md` §14 |
 | ID 生成 | 2026-06-11 | **拒绝 Redis INCR 发号;当前继续静态 `node.zone_id` + 本地 snowflake,未来动态多副本用 etcd Lease 分配 nodeID** | Redis INCR 慢 4~5 个数量级且有持久化/主从切换计数回退发重号风险;Redis `SETNX+TTL+看门狗` 不能可靠 fencing。etcd 方案仍需 KeepAlive/session monitor,失租必须停发并退出。详见 `infra.md` §8.1 |
 | UE push | 2026-06-15 | **push stream 当前保持 AsyncTask 回传成品帧;解析器锁只保护 StreamParser 生命周期** | push 是低频事件流,双缓冲队列不能替代解析器生命周期同步;若未来追求零锁,改为每条 HTTP stream 闭包独占解析器 + 队列回传帧。详见 `gateway-decision.md` §15 |
+| friend 扩展 | 2026-06-18 | **全服分片好友图不做跨玩家分布式事务,改为 request 单点权威 CAS + Kafka 异步幂等建边** | 当前 `AcceptFriend` 仅在单 MySQL `pandora_social` 内成立;Redis Cluster / 分片 MySQL 都不能原样承载跨 requester/target 原子事务。好友图权威主存推荐按 owner `player_id` 分片 MySQL,Redis 只做热点缓存。详见 `go-services.md` §2.4 |

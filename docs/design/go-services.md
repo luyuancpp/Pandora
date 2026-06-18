@@ -125,6 +125,20 @@ Block(player_id, target_id) → ok
 
 **2026-06-15 实现**：按「补全 friend 模块」要求提前落地完整 Kratos 服务（第 11 个业务服）：好友图落 pandora_social（friendships / friend_requests / blocks），好友请求 / 接受经 kafka pandora.friend.event → push 推送给接收方，ListFriends 经 player_locator 填在线状态（弱依赖）。见 PROGRESS.md「社交域 ①」。
 
+**2026-06-18 分布式好友图决策**：当前 friend 服务是**单 MySQL / 单库 `pandora_social` 方案**，`AcceptFriend` 能成立的前提是 `friend_requests`、`blocks`、`friendships` 三张表都在同一个 MySQL 实例内。当前实现依赖本地 ACID 事务：锁 `friend_requests` 行（`FOR UPDATE`）→ 同事务校验 block / 好友上限 → 标记 accepted → `INSERT IGNORE` 写双向 `friendships`。这只能保证单实例内的原子性和防 TOCTOU。
+
+全区全服千万级玩家时，好友边会到十亿级，必须按 `player_id` 对好友图分库分表；此时 `requester` 与 `target` 的双向边大概率落在不同分片，当前跨玩家事务不再成立。把主存直接换成 Redis Cluster 也不能解决：`MULTI/EXEC` 和 Lua 只能操作同 slot key，`request:{request_id}`、`friends:{requester_id}`、`friends:{target_id}`、`block:{requester_id}`、`block:{target_id}` 会跨 slot；Redis 事务也没有逻辑回滚。因此禁止把当前 MySQL `FOR UPDATE` 事务原样搬到 Redis Cluster 或分片 MySQL。
+
+目标形态采用 **request 单点权威 CAS + Kafka 异步幂等建边**：
+- `friend_request` 是唯一权威实体，`pending -> accepted` 通过单行 / 单 key CAS 完成（MySQL `UPDATE ... WHERE status=pending` 或 Redis 单 key Lua 均可），谁 CAS 成功谁才算接受成功；重复 accept 天然幂等。
+- CAS 成功后发布 `FriendshipEstablished(requester_id, target_id, request_id)` 事件，topic key 用业务实体 ID（优先 `request_id`，对齐 CLAUDE.md §9.9 的同实体有序）。
+- 建边消费者分别按 owner 分片写 `requester -> target` 和 `target -> requester`，各自 `INSERT IGNORE` / `SETNX`，单分片幂等，失败重试。
+- 好友上限改为软约束：建边时按 owner 本地校验，超限发补偿事件删边；或接受最终一致软上限。分片下无法强一致保证“双方同时不超限”，不引入 2PC / XA。
+- block 校验也按 owner 分片本地执行；如果建边期间发现一侧已拉黑，发补偿事件清理另一侧边，补偿必须幂等。
+- 好友图权威主存仍推荐分片 MySQL（按 owner `player_id` 分片），Redis 只做在线玩家 / 热好友列表缓存，不做十亿级好友边权威存储。
+
+迁移边界：当前 W5 以内继续保留单 MySQL 事务实现；进入全服社交扩展前，必须先补 `friend` 的 outbox / 事件消费 / 补偿幂等键设计，再拆分 `AcceptFriend`。该迁移属于服务级架构改造，不允许只改存储连接串。
+
 ---
 
 ### 2.5 chat
