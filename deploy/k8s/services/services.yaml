@@ -306,6 +306,7 @@ spec:
   template:
     metadata: { labels: { app: ds-allocator } }
     spec:
+      serviceAccountName: pandora-allocator   # Agones API 权限(agones 模式下需要;mock 不用但无害)
       containers:
         - name: ds-allocator
           image: pandora/ds-allocator:dev
@@ -330,6 +331,7 @@ spec:
   template:
     metadata: { labels: { app: hub-allocator } }
     spec:
+      serviceAccountName: pandora-allocator   # Agones API 权限(agones 模式下需要;mock 不用但无害)
       containers:
         - name: hub-allocator
           image: pandora/hub-allocator:dev

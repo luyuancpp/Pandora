@@ -71,7 +71,12 @@ kubectl get gameservers -L agones.dev/fleet,pandora.dev/region
 # 期望:pandora-battle 2 个 Ready, pandora-hub 3 个 Ready(region=cn)
 ```
 
-## 3. 让本机 allocator 连 minikube apiserver（Codex 执行 + 给 Claude 复核）
+## 3. 让本机 allocator 连 minikube apiserver
+
+> ⚠️ **提交规范**：两个 allocator 的 `*-dev.yaml` 基线一律保持 `mode: local`、`agones.enabled: false`,
+> 且 `api_server` / `token_path` 用通用 in-cluster 默认值。**不要把本机 minikube 的临时 apiserver 地址、
+> token 路径提交进仓库**。本地切到 Agones 链路靠 `start.ps1 -Mode k8s`(脚本生成 cluster 配置),
+> 见 `tools/scripts/gen_cluster_config.ps1` 的 `-AllocatorMode agones`。
 
 allocator 当前是**本机进程**（docker-compose dev 之外单独跑），需要把它指向 minikube
 apiserver + 提供 `pandora-allocator` ServiceAccount 的 token。
@@ -85,7 +90,7 @@ $token = (kubectl create token pandora-allocator -n default --duration=24h)
 Set-Content -Path "$env:TEMP\pandora-allocator.token" -Value $token -NoNewline
 ```
 
-然后改两个 allocator 的 dev yaml 的 `agones` 段（**Claude 已留好字段，Codex 只填值**）：
+然后**临时**改两个 allocator 的 dev yaml 的 `agones` 段（**只在本机改，验完即还原，勿提交**）：
 
 ```yaml
 # ds_allocator-dev.yaml / hub_allocator-dev.yaml
@@ -97,10 +102,28 @@ agones:
   token_path: "C:\\Users\\<you>\\AppData\\Local\\Temp\\pandora-allocator.token"
   insecure_skip_tls_verify: true           # minikube 自签证书,dev 临时开;或填 ca_path
   # ca_path: "<minikube ca.crt 路径>"      # 与 insecure_skip_tls_verify 二选一
+  advertise_host: "127.0.0.1"              # docker-driver 必填,见 §3.1;真集群留空用 status.address
 ```
 
 > 也可用 `kubectl proxy --port=8001` 起本地代理，然后 `api_server: http://127.0.0.1:8001`
 > + `token_path: "-"`（不带 token，proxy 复用 kubeconfig 凭证），免去 token/TLS 配置。
+
+### 3.1 Windows 客户端 → Linux DS 回程中继（docker driver 必读）
+
+minikube 用 **docker driver** 时，GameServer Pod 的 `status.address` 是集群内网 IP，Windows
+客户端**直连不到**。解决办法两段：
+
+1. allocator 侧把返回地址改写成本机回环：`advertise_host: "127.0.0.1"`（§3 yaml 已含）。
+   `start.ps1 -Mode k8s` 走脚本流程时会自动注入(`gen_cluster_config.ps1 -AllocatorAdvertiseHost 127.0.0.1`)。
+2. 本机起 UDP 中继，把 `127.0.0.1:<port>` 转发到 minikube 节点同端口：
+
+```powershell
+# 自动解析 minikube ip 作为转发目标,监听 7000-8000(对齐 Agones dynamic port 默认范围)
+pwsh tools/scripts/udp_relay.ps1
+# 链路:client --UDP--> 127.0.0.1:<port> --[tools/udp-relay]--> <minikube ip>:<port> --> GameServer
+```
+
+> 真集群 / 非 docker-driver 不需要本中继，`advertise_host` 留空直接用 `status.address`。
 
 ---
 
