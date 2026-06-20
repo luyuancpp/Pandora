@@ -38,6 +38,10 @@ rules:
   - apiGroups: ["agones.dev"]
     resources: ["gameservers"]
     verbs: ["get", "list", "delete"]
+  # hub_allocator 自动扩缩容 / 整合时需读写 Fleet spec.replicas
+  - apiGroups: ["agones.dev"]
+    resources: ["fleets"]
+    verbs: ["get", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

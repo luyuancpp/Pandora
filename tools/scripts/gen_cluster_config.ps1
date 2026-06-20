@@ -51,6 +51,7 @@ $Services = @(
     @{ Name = 'dialogue';       Conf = 'services/social/dialogue/etc/dialogue-dev.yaml';           Port = 50013 }
     @{ Name = 'push';           Conf = 'services/runtime/push/etc/push-dev.yaml';                  Port = 50014 }
     @{ Name = 'inventory';      Conf = 'services/economy/inventory/etc/inventory-dev.yaml';        Port = 50015 }
+    @{ Name = 'auction';        Conf = 'services/economy/auction/etc/auction-dev.yaml';            Port = 50016 }
     @{ Name = 'ds-allocator';   Conf = 'services/battle/ds_allocator/etc/ds_allocator-dev.yaml';   Port = 50020 }
     @{ Name = 'hub-allocator';  Conf = 'services/battle/hub_allocator/etc/hub_allocator-dev.yaml'; Port = 50021 }
     @{ Name = 'battle-result';  Conf = 'services/battle/battle_result/etc/battle_result-dev.yaml'; Port = 50022 }
