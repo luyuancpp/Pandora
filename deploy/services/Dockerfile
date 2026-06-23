@@ -21,6 +21,12 @@ FROM golang:${GO_VERSION} AS builder
 ARG SERVICE_DIR
 ARG CMD_NAME
 
+# 版本烙印:由 start.ps1 / compose 传入 git 版本信息,编译期 -ldflags -X 注入二进制。
+# 不传时用占位默认值(本地随手 build 也能跑),线上发布务必传真实 git tag/commit。
+ARG VERSION=dev
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+
 WORKDIR /src
 
 # 拷整个 workspace(go.work + pkg + proto + services)。.dockerignore 已排除产物/缓存。
@@ -31,7 +37,12 @@ ENV CGO_ENABLED=0 GOOS=linux GOFLAGS=-trimpath
 RUN test -n "$SERVICE_DIR" || (echo "ERROR: build-arg SERVICE_DIR 必填" && exit 1) \
     && test -n "$CMD_NAME" || (echo "ERROR: build-arg CMD_NAME 必填" && exit 1) \
     && cd "/src/${SERVICE_DIR}" \
-    && go build -ldflags="-s -w" -o /out/app "./cmd/${CMD_NAME}"
+    && go build \
+        -ldflags="-s -w \
+            -X github.com/luyuancpp/pandora/pkg/version.Version=${VERSION} \
+            -X github.com/luyuancpp/pandora/pkg/version.Commit=${GIT_COMMIT} \
+            -X github.com/luyuancpp/pandora/pkg/version.BuildTime=${BUILD_TIME}" \
+        -o /out/app "./cmd/${CMD_NAME}"
 
 # ===== 运行阶段 =====
 FROM alpine:3.20

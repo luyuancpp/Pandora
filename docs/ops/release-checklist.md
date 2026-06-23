@@ -135,3 +135,46 @@ pwsh tools/scripts/import_dev_ca.ps1
 4. UE 用生产 ini 打 **Shipping** 包
 5. 用真机 / 干净环境(没装过 mkcert CA)验证登录链路:登录 → 进大厅 → 匹配 → 战斗 → 结算
 6. git push / tag / release(人手动执行,见 AGENTS §3)
+
+---
+
+## 6. 版本记录与可追溯(线上发布必看)
+
+线上**不提交任何二进制**:git 只存源码 + tag,可部署的二进制以**容器镜像**存在 registry。
+用**同一个版本号**把三处串起来,做到「线上某个 pod ↔ git 某次提交」可追溯。
+
+### 6.1 一个版本号,焊进三处
+
+```
+git tag v1.2.3                       ① 源码快照(人手动打,AGENTS §3)
+  └─同号─► 镜像 pandora/<svc>:v1.2.3  ② 可部署产物(push 到 registry)
+            └─同号─► k8s newTag: v1.2.3 ③ 线上实际部署的版本
+```
+
+二进制内部也烙了版本(编译期 `-ldflags -X` 注入 [`pkg/version`](../../pkg/version/version.go)):
+
+- 每个服务**启动首行日志**就打印 `version=v1.2.3 commit=abc1234 built=... go=...`(由 `pkg/log.Setup` 统一输出)。
+- 版本号来源:`tools/scripts/start.ps1` 的 `Get-VersionInfo` 跑 `git describe --tags` + `git rev-parse --short HEAD`,
+  通过 Dockerfile build-arg(`VERSION`/`GIT_COMMIT`/`BUILD_TIME`)注入。
+- 本地随手 `go run`(没注入)时回退 `version=dev commit=unknown`,不影响启动。
+
+> 排障时:`kubectl logs <pod> | head -1` 看启动版本行,或 `kubectl get deploy -o jsonpath` 看 image tag,
+> 两者应一致 = 没人偷偷热改过镜像。
+
+### 6.2 线上发布打版本(命令)
+
+```powershell
+# 1) 人手动打 git tag(冻结源码快照)
+git tag v1.2.3
+git push origin v1.2.3
+
+# 2) 构建 + 打同号镜像 + push 到 registry + apply 到线上(start.ps1 online 模式已支持)
+pwsh tools/scripts/start.ps1 -Mode online `
+  -Registry registry.yourcorp.com -Tag v1.2.3 -BuildPush
+```
+
+- `-BuildPush` 会构建 15 个服务镜像(自动带 git 版本烙印)、tag 成 `v1.2.3`、push 到 registry,
+  再用该 tag 覆盖 [`overlays/online/kustomization.yaml`](../../deploy/k8s/overlays/online/kustomization.yaml) 部署。
+- **git push / tag 由人手动执行**(AGENTS §3),脚本不替你推。
+
+> dev/docker 模式的镜像 tag 固定 `:dev`(跟最新代码走,不需要版本号);**只有线上发布才打 `v1.2.3` 这种版本 tag**。

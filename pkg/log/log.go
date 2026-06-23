@@ -17,6 +17,8 @@ import (
 	klog "github.com/go-kratos/kratos/v2/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/luyuancpp/pandora/pkg/version"
 )
 
 // ContextKey 是 log 包专用的 context key 类型,避免与业务 key 冲突。
@@ -68,6 +70,17 @@ func Setup(serviceName string) klog.Logger {
 
 	// 也设成全局默认,业务侧 klog.DefaultLogger 可用
 	klog.SetLogger(logger)
+
+	// 启动即打印构建版本(编译期 -ldflags 注入,未注入则为 dev/unknown)。
+	// 让每个线上 pod 都能从首行日志回答「我是哪个 git tag/commit 编出来的」。
+	v := version.Get()
+	klog.NewHelper(logger).Infow(
+		"msg", "service starting",
+		"version", v.Version,
+		"commit", v.Commit,
+		"build_time", v.BuildTime,
+		"go_version", v.GoVersion,
+	)
 
 	return logger
 }

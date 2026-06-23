@@ -186,8 +186,11 @@ function Invoke-Docker {
     Write-Step "[2/3] 生成集群版配置"
     & "$ScriptDir/gen_cluster_config.ps1"
 
-    Write-Step "[3/3] 构建并启动业务服务容器"
-    docker compose -f $ComposeServices up -d --build
+    Write-Step "[3/3] 构建带版本烙印的镜像并启动业务服务容器"
+    # 走 Build-AllImages(带 git 版本 build-arg),再用已构建镜像编排,
+    # 避免 compose --build 绕过版本烙印。镜像 tag 与 compose image: 一致。
+    Build-AllImages
+    docker compose -f $ComposeServices up -d
     if ($LASTEXITCODE -ne 0) { throw "业务服务容器启动失败" }
 
     Write-Host ""
@@ -337,13 +340,38 @@ function Get-ServiceImages {
     Get-ServiceList | ForEach-Object { "pandora/$($_.Name):dev" }
 }
 
+# 从 git 推导版本烙印信息(编译期注入二进制,实现「线上跑的 ↔ git 某次提交」可追溯)。
+# git 不可用 / 不是 git 仓库时回退占位值,不阻断构建。
+function Get-VersionInfo {
+    $ver    = 'dev'
+    $commit = 'unknown'
+    $built  = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+    if (Test-CommandExists 'git') {
+        Push-Location $ProjectRoot
+        try {
+            $d = (git describe --tags --always --dirty 2>$null)
+            if ($LASTEXITCODE -eq 0 -and $d) { $ver = $d.Trim() }
+            $c = (git rev-parse --short HEAD 2>$null)
+            if ($LASTEXITCODE -eq 0 -and $c) { $commit = $c.Trim() }
+        } finally {
+            Pop-Location
+        }
+    }
+    return [pscustomobject]@{ Version = $ver; Commit = $commit; BuildTime = $built }
+}
+
 function Build-AllImages {
     $dockerfile = Join-Path $ProjectRoot 'deploy/services/Dockerfile'
+    $v = Get-VersionInfo
+    Write-Info "  版本烙印:version=$($v.Version) commit=$($v.Commit) built=$($v.BuildTime)"
     foreach ($svc in (Get-ServiceList)) {
         Write-Info "  docker build pandora/$($svc.Name):dev ..."
         docker build -f $dockerfile `
             --build-arg "SERVICE_DIR=$($svc.Dir)" `
             --build-arg "CMD_NAME=$($svc.Cmd)" `
+            --build-arg "VERSION=$($v.Version)" `
+            --build-arg "GIT_COMMIT=$($v.Commit)" `
+            --build-arg "BUILD_TIME=$($v.BuildTime)" `
             -t "pandora/$($svc.Name):dev" $ProjectRoot
         if ($LASTEXITCODE -ne 0) { throw "镜像构建失败:$($svc.Name)" }
     }
