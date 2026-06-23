@@ -471,6 +471,13 @@ Installed Build 不是天然不兼容。它从源码版引擎产出,默认会继
   + roster 名单（battle）+ `jti` 防重放（一张票只进场一次，重连须用新票）+ `PostLogin` 单会话顶号
   （同 player_id 旧连接踢掉，不变量 §1 在单 DS 内落地）。客户端连接时用 `?ticket=<JWT>` 带票。
   落地文件见下表 Auth/GameMode 行。**生产应把 HS256 切 RS256**（DS 只揣公钥，密钥不下放 DS）。
+- **Hub DS 也必须带 DSTicket**：虽然 Hub 只是大厅服，但它仍是 UE Dedicated Server 入口；客户端连入后会
+  创建 `PlayerController` / `PlayerState` / pawn，并通过 Hub DS 驱动 `player_locator.SetLocation(HUB)`、
+  组队/匹配入口等状态。若无票放行，客户端可伪造身份或直连 Hub DS，污染 locator / team / match 状态。
+  Hub 票与 Battle 票强度不同：Hub 票不绑定 `match_id`、不校验 battle roster，只证明“这个客户端是谁”；
+  Battle 票必须绑定 `match_id` + roster，只允许本局玩家进入。两者都保持短期、一次性语义；从 Battle
+  结算回 Hub 时不能复用登录进 Hub 时已消费的 hub 票，必须重新签发新的 `ds_type=hub` DSTicket 再
+  `ClientTravel` 回 Hub。
 - **占位验证**：UE DS 就绪前，先用 `deploy/k8s/agones` 的 simple-game-server 占位 Fleet 验
   Agones 分配链路（见 README §4 第一步）；心跳 / locator 链路用 `tools/scripts/ds_heartbeat_stub.ps1`
   当 stub（grpcurl 周期调 Heartbeat + SetLocation，第二步），真 UE DS 就绪后替换。

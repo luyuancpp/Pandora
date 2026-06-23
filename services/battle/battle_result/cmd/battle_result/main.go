@@ -126,7 +126,22 @@ func main() {
 
 	// 6. 装配链
 	repo := data.NewMySQLBattleRepo(db)
-	uc := biz.NewBattleResultUsecase(repo, mmr, pusher, cfg.Battle)
+
+	// 6.0 matchmaker releaser(弱依赖:MatchmakerAddr 空 → 不通知释放,仅 Warn 不阻断落库)
+	// 用于结算/废弃落库后调 matchmaker.ReleaseMatch 释放残留撮合状态,
+	// 修复"结算返回 Hub 后玩家无法再次匹配(StartMatch 4002)"。
+	var releaser biz.MatchReleaser
+	if cfg.Battle.MatchmakerAddr != "" {
+		mr := data.NewGrpcMatchReleaser(cfg.Battle.MatchmakerAddr)
+		defer func() { _ = mr.Close() }()
+		releaser = mr
+		helper.Infow("msg", "match_releaser_grpc", "matchmaker_addr", cfg.Battle.MatchmakerAddr)
+	} else {
+		helper.Warnw("msg", "match_releaser_disabled",
+			"hint", "matchmaker_addr 未配置 → 结算后不通知 matchmaker 释放撮合状态(玩家可能需等 TTL 才能再次匹配)")
+	}
+
+	uc := biz.NewBattleResultUsecase(repo, mmr, pusher, releaser, cfg.Battle)
 	svc := service.NewBattleResultService(uc)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

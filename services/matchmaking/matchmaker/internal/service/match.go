@@ -99,6 +99,19 @@ func (s *MatchService) GetMatchProgress(ctx context.Context, req *matchv1.GetMat
 	return &matchv1.GetMatchProgressResponse{Code: commonv1.ErrCode_OK, Progress: prog}, nil
 }
 
+// ReleaseMatch 释放一场已结束(结算 / abandoned)对局的撮合状态。
+//   - 后端内部接口(battle_result 结算落库后调用),不经 Envoy / 不取 JWT player_id。
+//   - 按 match_id(+ 兜底 player_ids)操作;幂等,重复调用 / 已释放均返回 OK。
+func (s *MatchService) ReleaseMatch(ctx context.Context, req *matchv1.ReleaseMatchRequest) (*matchv1.ReleaseMatchResponse, error) {
+	if req.GetMatchId() == 0 {
+		return &matchv1.ReleaseMatchResponse{Code: commonv1.ErrCode_ERR_INVALID_ARG}, nil
+	}
+	if err := s.uc.ReleaseMatch(ctx, req.GetMatchId(), req.GetPlayerIds()); err != nil {
+		return &matchv1.ReleaseMatchResponse{Code: toProtoCode(err)}, nil
+	}
+	return &matchv1.ReleaseMatchResponse{Code: commonv1.ErrCode_OK}, nil
+}
+
 // ── 辅助 ──────────────────────────────────────────────────────────────────────
 
 // callerID 从 ctx 取 JWT 注入的 player_id。

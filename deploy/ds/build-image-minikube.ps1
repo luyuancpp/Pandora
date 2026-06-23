@@ -48,12 +48,18 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Profile)) {
+    # 优先用当前 minikube profile；解析不到时 fallback 到 'pandora-agones'（本地 Agones 联调用 profile）。
+    # 不要 fallback 到 'minikube'：旧默认 profile（192.168.49.x docker network）残留会让镜像落错 daemon，
+    # 后续 relay/DS 走错网络，登录成功但 UDP 进不了 Hub DS。
     $Profile = (& minikube profile 2>$null | Select-Object -First 1).Trim()
     if ([string]::IsNullOrWhiteSpace($Profile)) {
-        $Profile = 'minikube'
+        $Profile = 'pandora-agones'
+        Write-Host "[build-image-minikube] 未指定 -Profile 且无法解析当前 minikube profile，fallback 到 '$Profile'" -ForegroundColor Yellow
+    } else {
+        Write-Host "[build-image-minikube] 未指定 -Profile，使用当前 minikube profile '$Profile'" -ForegroundColor DarkGray
     }
-    Write-Host "[build-image-minikube] 未指定 -Profile，使用当前 minikube profile '$Profile'" -ForegroundColor DarkGray
 }
+Write-Host "[build-image-minikube] 目标 minikube profile = '$Profile'" -ForegroundColor Cyan
 
 # 校验 minikube profile 在跑（Running 才有可连的内置 daemon）。
 $status = & minikube -p $Profile status --format '{{.Host}}' 2>$null

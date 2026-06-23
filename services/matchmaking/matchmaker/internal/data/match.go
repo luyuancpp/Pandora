@@ -31,6 +31,13 @@ const (
 	activeKey = "pandora:match:active"
 )
 
+// CreateMatch 中 activeKey ZADD 的有界重试参数:matchKey 已 SET 成功后,ZADD 幂等,
+// 用短退避吸收 Redis 瞬时抖动,耗尽才删 matchKey 回滚(见 CreateMatch 注释)。
+const (
+	createMatchZAddRetry   = 3
+	createMatchZAddBackoff = 20 * time.Millisecond
+)
+
 func ticketKey(ticketID uint64) string { return fmt.Sprintf("pandora:match:ticket:%d", ticketID) }
 func matchKey(matchID uint64) string   { return fmt.Sprintf("pandora:match:{%d}", matchID) }
 func playerKey(playerID uint64) string { return fmt.Sprintf("pandora:match:player:%d", playerID) }
@@ -70,6 +77,8 @@ type MatchRepo interface {
 	RemoveActive(ctx context.Context, matchID uint64) error
 	// ExpireMatch 改短 match key TTL(终态保留供客户端查询)并移出 active。
 	ExpireMatch(ctx context.Context, matchID uint64, ttl time.Duration) error
+	// DeleteMatch 硬删 match 镜像并移出 active ZSET(对局结算/废弃后释放撮合状态)。
+	DeleteMatch(ctx context.Context, matchID uint64) error
 	// RangeExpiredMatches 返回 confirm_deadline_ms ≤ nowMs 的 match_id(确认期已超时)。
 	RangeExpiredMatches(ctx context.Context, nowMs int64) ([]uint64, error)
 }
@@ -214,16 +223,30 @@ func (r *RedisMatchRepo) CreateMatch(ctx context.Context, match *matchv1.MatchSt
 		return err
 	}
 	// Cluster 兼容:matchKey{id} 与全局 activeKey 不同 slot。① matchKey 单键 SET 权威落库;
-	// ② activeKey 独立 ZADD 登记确认期超时扫描。ZADD 失败时 best-effort 删掉刚写入的
-	// matchKey,让上层 rollbackReservations 后不留下「match 已建但票据已回队列」的悬空记录。
+	// ② activeKey 独立 ZADD 登记确认期超时扫描。
 	if err := r.rdb.Set(ctx, matchKey(match.MatchId), payload, matchTTL).Err(); err != nil {
 		return err
 	}
-	if err := r.rdb.ZAdd(ctx, activeKey, redis.Z{Score: float64(match.ConfirmDeadlineMs), Member: match.MatchId}).Err(); err != nil {
-		_ = r.rdb.Del(ctx, matchKey(match.MatchId)).Err()
-		return err
+	// ZADD 幂等,先有界重试吸收 Redis 瞬时抖动(避免一次网络毛刺就让整场撮合走 rollback);
+	// 耗尽仍失败才 best-effort 删掉刚写入的 matchKey,让上层 rollbackReservations 后不残留
+	// 「match 已建但票据已回队列且不在 active ZSET」的悬空记录(它永远进不了超时扫描 = 死状态)。
+	zadd := redis.Z{Score: float64(match.ConfirmDeadlineMs), Member: match.MatchId}
+	var zerr error
+	for attempt := 0; attempt < createMatchZAddRetry; attempt++ {
+		if zerr = r.rdb.ZAdd(ctx, activeKey, zadd).Err(); zerr == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			zerr = ctx.Err()
+		case <-time.After(createMatchZAddBackoff):
+		}
+		if ctx.Err() != nil {
+			break
+		}
 	}
-	return nil
+	_ = r.rdb.Del(ctx, matchKey(match.MatchId)).Err()
+	return zerr
 }
 
 func (r *RedisMatchRepo) GetMatch(ctx context.Context, matchID uint64) (*matchv1.MatchStorageRecord, bool, error) {
@@ -300,6 +323,14 @@ func (r *RedisMatchRepo) RemoveActive(ctx context.Context, matchID uint64) error
 func (r *RedisMatchRepo) ExpireMatch(ctx context.Context, matchID uint64, ttl time.Duration) error {
 	// Cluster 兼容:matchKey 与 activeKey 不同 slot,拆为独立命令。
 	if err := r.rdb.Expire(ctx, matchKey(matchID), ttl).Err(); err != nil {
+		return err
+	}
+	return r.rdb.ZRem(ctx, activeKey, matchID).Err()
+}
+
+func (r *RedisMatchRepo) DeleteMatch(ctx context.Context, matchID uint64) error {
+	// Cluster 兼容:matchKey 与 activeKey 不同 slot,拆为独立命令。均幂等。
+	if err := r.rdb.Del(ctx, matchKey(matchID)).Err(); err != nil {
 		return err
 	}
 	return r.rdb.ZRem(ctx, activeKey, matchID).Err()

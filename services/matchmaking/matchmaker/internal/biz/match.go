@@ -265,6 +265,99 @@ func (u *MatchUsecase) CancelMatch(ctx context.Context, playerID uint64) error {
 	return nil
 }
 
+// ── 对局结束释放:ReleaseMatch ────────────────────────────────────────────────
+
+// ReleaseMatch 释放一场已结束(结算 / abandoned)对局的全部撮合状态,由 battle_result 在
+// 结算落库后调用(后端内部接口,不带玩家 JWT)。修复:对局走完 READY → 进战斗 → 结算后,
+// onAllConfirmed 故意保留的 player→ticket 归属(SETNX claim)+ 票据 + match 镜像本只能等
+// TTL(30min)自然过期;期间玩家回 Hub 再次 StartMatch 会被 ClaimPlayer SETNX 撞上残留 claim
+// 报 ErrMatchAlreadyMatching(4002)。此处在结算时主动彻底释放,玩家回 Hub 即可立刻再次匹配。
+//
+// 释放对象(全部幂等,任一步失败仅 Warn 不中断,best-effort 清完能清的):
+//   - 每个成员的 player→ticket 归属(仅当其当前 claim 仍指向本局票据时才删,避免误删
+//     玩家结算后已经发起的新一局 claim)
+//   - 本局全部排队票据(ticket record + queue ZSET 残留)
+//   - match 镜像 + active 索引
+//
+// fallbackPlayerIDs:battle_result 从 BattleResult.stats 带来的玩家名单。match 镜像若已过 TTL
+// 消失,仍可凭它兜底清掉残留 claim(只删确属本局的,见 releasePlayerClaim)。
+func (u *MatchUsecase) ReleaseMatch(ctx context.Context, matchID uint64, fallbackPlayerIDs []uint64) error {
+	if matchID == 0 {
+		return errcode.New(errcode.ErrInvalidArg, "match_id required")
+	}
+
+	// 收集成员 + 本局票据(match 镜像若已过期则仅靠 fallback 兜底清 claim)。
+	playerSet := make(map[uint64]struct{})
+	var ticketIDs []uint64
+	matchFound := false
+
+	if m, found, err := u.repo.GetMatch(ctx, matchID); err != nil {
+		plog.With(ctx).Warnw("msg", "release_get_match_failed", "match_id", matchID, "err", err)
+	} else if found {
+		matchFound = true
+		ticketIDs = m.TicketIds
+		for _, pid := range memberPlayerIDs(m.Members) {
+			playerSet[pid] = struct{}{}
+		}
+	}
+	for _, pid := range fallbackPlayerIDs {
+		if pid != 0 {
+			playerSet[pid] = struct{}{}
+		}
+	}
+
+	// 删确属本局的票据(idempotent)。
+	ticketSet := make(map[uint64]struct{}, len(ticketIDs))
+	for _, tid := range ticketIDs {
+		ticketSet[tid] = struct{}{}
+		if err := u.repo.DeleteTicket(ctx, tid); err != nil {
+			plog.With(ctx).Warnw("msg", "release_delete_ticket_failed", "match_id", matchID, "ticket_id", tid, "err", err)
+		}
+	}
+
+	// 删每个成员的 player→ticket 归属(仅当确属本局,防误删结算后新一局 claim)。
+	for pid := range playerSet {
+		u.releasePlayerClaim(ctx, matchID, pid, ticketSet)
+	}
+
+	// 硬删 match 镜像 + 移出 active。
+	if err := u.repo.DeleteMatch(ctx, matchID); err != nil {
+		plog.With(ctx).Warnw("msg", "release_delete_match_failed", "match_id", matchID, "err", err)
+	}
+
+	plog.With(ctx).Infow("msg", "match_released", "match_id", matchID,
+		"match_found", matchFound, "players", len(playerSet), "tickets", len(ticketIDs))
+	return nil
+}
+
+// releasePlayerClaim 释放单个玩家的 player→ticket 归属,但仅当其当前 claim 确属本局
+// (claim 指向的票据 ∈ 本局票据,或该票据的 match_id == 本局)。玩家若已发起新一局,
+// 其 claim 指向新票据(不同 match_id / 不在本局票据集),此处不动,避免误删新 claim。
+func (u *MatchUsecase) releasePlayerClaim(ctx context.Context, matchID, playerID uint64, ticketSet map[uint64]struct{}) {
+	tid, ok, err := u.repo.GetPlayerTicket(ctx, playerID)
+	if err != nil {
+		plog.With(ctx).Warnw("msg", "release_get_player_ticket_failed", "match_id", matchID, "player_id", playerID, "err", err)
+		return
+	}
+	if !ok {
+		return // claim 已释放
+	}
+	belongs := false
+	if _, in := ticketSet[tid]; in {
+		belongs = true
+	} else if t, found, gerr := u.repo.GetTicket(ctx, tid); gerr == nil && found && t.MatchId == matchID {
+		belongs = true
+	}
+	if !belongs {
+		// claim 指向别的票据(玩家结算后已发起新一局)→ 不误删。
+		plog.With(ctx).Infow("msg", "release_skip_stale_claim", "match_id", matchID, "player_id", playerID, "current_ticket", tid)
+		return
+	}
+	if err := u.repo.DeletePlayerIndex(ctx, playerID); err != nil {
+		plog.With(ctx).Warnw("msg", "release_delete_player_index_failed", "match_id", matchID, "player_id", playerID, "err", err)
+	}
+}
+
 // ── RPC 3:ConfirmMatch ───────────────────────────────────────────────────────
 
 // ConfirmMatch 确认/拒绝匹配。

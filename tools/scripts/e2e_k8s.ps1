@@ -5,7 +5,7 @@
 #   2) 把两个真 UE Linux DS 镜像(精确 tag,从 Fleet yaml 动态解析)load 进 minikube
 #   3) 起宿主 Envoy 桥接(kubectl port-forward 所有 envoy upstream + docker envoy :8443/:8444)
 #   4) 等 pandora-battle / pandora-hub Fleet Ready
-#   5) (可选)起容器版 UDP 回程中继(--network minikube;docker driver 下客户端连 DS 必需)
+#   5) (可选)起容器版 UDP 回程中继(--network <minikube profile>;docker driver 下客户端连 DS 必需)
 #   6) 打印端到端验收清单(用真 UE 客户端验:登录→hub→战斗→结算回 hub)
 #
 # 前置(由 start.ps1 -Mode k8s 完成):minikube 起、Agones 装好、RBAC/Fleet apply、16 个后端服务部署。
@@ -17,6 +17,7 @@
 #   pwsh tools/scripts/e2e_k8s.ps1 -NoRelay        # 不自动起容器版中继(自己按提示起 pandora/udp-relay:dev 容器)
 #   pwsh tools/scripts/e2e_k8s.ps1 -SkipImageLoad  # 镜像已 load 过,跳过
 #   pwsh tools/scripts/e2e_k8s.ps1 -TimeoutSec 300 # 等 Fleet Ready 的超时(默认 240s)
+#   pwsh tools/scripts/e2e_k8s.ps1 -MinikubeProfile pandora-agones # 指定 minikube profile / docker network
 #   pwsh tools/scripts/e2e_k8s.ps1 -BridgeForce    # 500xx 端口被本地/compose 旧服务占用时,杀掉后重建 port-forward
 
 [CmdletBinding()]
@@ -24,6 +25,8 @@ param(
     [switch]$NoRelay,        # 不自动起容器版 UDP 中继
     [switch]$SkipImageLoad,  # 跳过 minikube image load
     [switch]$BridgeForce,    # 端口被非 bridge 进程占用时,杀掉占用者后重建 port-forward
+    [Alias('Profile')]
+    [string]$MinikubeProfile = 'pandora-agones', # minikube profile;docker driver 下通常同名 docker network
     [int]$TimeoutSec = 240   # 等 Fleet Ready 超时秒
 )
 
@@ -41,6 +44,42 @@ function Write-Err($m)  { Write-Host "[ERR ] $m" -ForegroundColor Red }
 function Write-Step($m) { Write-Host "`n===== $m =====" -ForegroundColor Magenta }
 
 function Test-CommandExists([string]$c) { return [bool](Get-Command $c -ErrorAction SilentlyContinue) }
+
+function Resolve-MinikubeProfile([string]$profile) {
+    if (-not [string]::IsNullOrWhiteSpace($profile)) { return $profile.Trim() }
+
+    $ctx = (kubectl config current-context 2>$null | Out-String).Trim()
+    if (-not [string]::IsNullOrWhiteSpace($ctx)) { return $ctx }
+
+    return 'pandora-agones'
+}
+
+function ConvertTo-IPv4UInt32([string]$ip) {
+    $parts = $ip.Split('.')
+    if ($parts.Count -ne 4) { throw "不是 IPv4 地址: $ip" }
+    $value = [uint32]0
+    foreach ($part in $parts) {
+        $octet = [int]$part
+        if ($octet -lt 0 -or $octet -gt 255) { throw "不是 IPv4 地址: $ip" }
+        $value = ($value -shl 8) -bor [uint32]$octet
+    }
+    return $value
+}
+
+function Test-IPv4InCidr([string]$ip, [string]$cidr) {
+    $cidrParts = $cidr.Split('/')
+    if ($cidrParts.Count -ne 2) { return $false }
+
+    $maskBits = [int]$cidrParts[1]
+    if ($maskBits -lt 0 -or $maskBits -gt 32) { return $false }
+
+    $ipValue = ConvertTo-IPv4UInt32 $ip
+    $networkValue = ConvertTo-IPv4UInt32 $cidrParts[0]
+    if ($maskBits -eq 0) { return $true }
+
+    $mask = ([uint32]::MaxValue) -shl (32 - $maskBits)
+    return (($ipValue -band $mask) -eq ($networkValue -band $mask))
+}
 
 # 从 Fleet yaml 里解析 image:(精确 tag,避免脚本写死过时)
 function Get-FleetImage([string]$yamlRelPath) {
@@ -68,9 +107,19 @@ Write-Step "[0/6] 校验 minikube / kubectl / Agones / 后端就绪"
 foreach ($c in @('kubectl', 'minikube', 'docker')) {
     if (-not (Test-CommandExists $c)) { Write-Err "$c 未安装。先跑 start.ps1 -Mode k8s -Install。"; exit 1 }
 }
-minikube status *> $null
-if ($LASTEXITCODE -ne 0) { Write-Err "minikube 未在运行。先跑:pwsh tools/scripts/start.ps1 -Mode k8s"; exit 1 }
-Write-Ok "minikube 运行中"
+$MinikubeProfile = Resolve-MinikubeProfile $MinikubeProfile
+$MinikubeDockerNetwork = $MinikubeProfile
+Write-Info "minikube profile: $MinikubeProfile"
+minikube -p $MinikubeProfile status *> $null
+if ($LASTEXITCODE -ne 0) { Write-Err "minikube profile '$MinikubeProfile' 未在运行。先跑:pwsh tools/scripts/start.ps1 -Mode k8s"; exit 1 }
+Write-Ok "minikube profile '$MinikubeProfile' 运行中"
+
+$currentContext = (kubectl config current-context 2>$null | Out-String).Trim()
+if ($currentContext -ne $MinikubeProfile) {
+    Write-Warn "当前 kubectl context='$currentContext',切换到 minikube profile '$MinikubeProfile'"
+    kubectl config use-context $MinikubeProfile *> $null
+    if ($LASTEXITCODE -ne 0) { Write-Err "无法切换 kubectl context 到 '$MinikubeProfile'"; exit 1 }
+}
 
 kubectl get ns agones-system *> $null
 if ($LASTEXITCODE -ne 0) { Write-Err "未检测到 Agones(agones-system)。先跑:pwsh tools/scripts/start.ps1 -Mode k8s"; exit 1 }
@@ -113,8 +162,8 @@ if ($SkipImageLoad) {
             Write-Warn "  构建后重跑;或若 tag 不同,改 Fleet yaml 的 image: 再重试。"
             exit 1
         }
-        Write-Info "  minikube image load $img ..."
-        minikube image load $img
+        Write-Info "  minikube -p $MinikubeProfile image load $img ..."
+        minikube -p $MinikubeProfile image load $img
         if ($LASTEXITCODE -ne 0) { Write-Err "load 失败: $img"; exit 1 }
     }
     Write-Ok "两个 DS 镜像已 load"
@@ -147,15 +196,15 @@ if (-not $bOk -or -not $hOk) {
     exit 1
 }
 
-# ── 4) UDP 回程中继(docker driver 必需:容器版,挂 minikube 网络) ──────────
+# ── 4) UDP 回程中继(docker driver 必需:容器版,挂 minikube profile 对应网络) ──────────
 # 为什么必须用容器版而不是 Windows 进程版:
 #   Windows + Docker Desktop + minikube docker driver 下,minikube 节点是跑在 Docker Desktop
-#   Linux VM 里的容器,IP 在 docker 网络 minikube(如 192.168.49.0/24)。Windows 宿主进程的
+#   Linux VM 里的容器,IP 在 profile 对应 docker 网络(如 pandora-agones / 192.168.58.0/24)。Windows 宿主进程的
 #   UDP 直发 192.168.49.2:<port> 不可路由 —— relay 收到包但 minikube 节点 hostPort DNAT 不增长,
-#   DS 收不到连接。把 relay 跑成容器并 `--network minikube`,它才能直连 192.168.49.x;再用
+#   DS 收不到连接。把 relay 跑成容器并 `--network <profile>`,它才能直连 minikube 节点 IP;再用
 #   `-p 127.0.0.1:7000-8000:.../udp` 让 Docker Desktop 把宿主 127.0.0.1 的 UDP 转进容器。
-#     client -> 127.0.0.1:<port>(Win) -[Docker Desktop]-> relay 容器 -[minikube net]-> 192.168.49.2:<port> -> DS
-Write-Step "[4/6] UDP 回程中继(dockerized,--network minikube)"
+#     client -> 127.0.0.1:<port>(Win) -[Docker Desktop]-> relay 容器 -[minikube net]-> <minikube ip>:<port> -> DS
+Write-Step "[4/6] UDP 回程中继(dockerized,--network $MinikubeDockerNetwork)"
 
 function Stop-HostUdpRelay {
     # 杀掉旧的 Windows 进程版中继(udp_relay.ps1 / go run tools/udp-relay),避免占 127.0.0.1:7000-8000
@@ -170,9 +219,9 @@ function Stop-HostUdpRelay {
 }
 
 if ($NoRelay) {
-    Write-Warn "已传 -NoRelay,未自动起中继。需手动起【容器版】中继(挂 minikube 网络):"
+    Write-Warn "已传 -NoRelay,未自动起中继。需手动起【容器版】中继(挂 $MinikubeDockerNetwork 网络):"
     Write-Warn "  docker build -t pandora/udp-relay:dev tools/udp-relay"
-    Write-Warn "  docker run -d --name pandora-udp-relay --network minikube -p 127.0.0.1:7000-8000:7000-8000/udp -e TARGET_HOST=`$(minikube ip) -e PORT_RANGE=7000-8000 pandora/udp-relay:dev"
+    Write-Warn "  docker run -d --name pandora-udp-relay --network $MinikubeDockerNetwork -p 127.0.0.1:7000-8000:7000-8000/udp -e TARGET_HOST=`$(minikube -p $MinikubeProfile ip) -e PORT_RANGE=7000-8000 pandora/udp-relay:dev"
 } else {
     $relayImage = 'pandora/udp-relay:dev'
     $relayName  = 'pandora-udp-relay'
@@ -183,19 +232,39 @@ if ($NoRelay) {
     Stop-HostUdpRelay
     docker rm -f $relayName *> $null
 
-    # 4.2 解析 minikube 节点 IP 作为转发目标(容器在 minikube 网络内可达)
-    $relayTarget = (& minikube ip 2>$null | Out-String).Trim()
+    # 4.2 解析 minikube 节点 IP 作为转发目标(容器在 profile 对应 docker 网络内可达)
+    $relayTarget = (& minikube -p $MinikubeProfile ip 2>$null | Out-String).Trim()
     if ([string]::IsNullOrWhiteSpace($relayTarget)) {
-        Write-Err "无法解析 minikube ip,容器版中继无法确定 TARGET_HOST。先确认 minikube 在跑。"
+        Write-Err "无法解析 minikube -p $MinikubeProfile ip,容器版中继无法确定 TARGET_HOST。先确认 minikube profile 在跑。"
         exit 1
     }
     Write-Info "  TARGET_HOST(minikube 节点)= $relayTarget"
 
-    # 4.3 确认 minikube docker 网络存在(--network 目标)
-    docker network inspect minikube *> $null
+    # 4.3 确认 profile 对应 docker 网络存在,且 target IP 落在该网络 subnet 内
+    $networkJson = (docker network inspect $MinikubeDockerNetwork 2>$null | Out-String)
     if ($LASTEXITCODE -ne 0) {
-        Write-Err "未找到 docker 网络 'minikube' —— 当前 minikube 可能不是 docker driver。容器版中继不适用。"
+        Write-Err "未找到 docker 网络 '$MinikubeDockerNetwork' —— 当前 minikube profile '$MinikubeProfile' 可能不是 docker driver,或 Docker 里残留/切到了其它 profile。容器版中继不适用。"
         exit 1
+    }
+    $network = ($networkJson | ConvertFrom-Json | Select-Object -First 1)
+    $subnets = @($network.IPAM.Config | ForEach-Object { $_.Subnet } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $ipv4Subnets = @($subnets | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+/\d+$' })
+    if ($subnets.Count -eq 0) {
+        Write-Warn "docker 网络 '$MinikubeDockerNetwork' 没有可校验的 IPAM subnet,跳过 TARGET_HOST/subnet 校验。"
+    } elseif ($ipv4Subnets.Count -eq 0) {
+        Write-Warn "docker 网络 '$MinikubeDockerNetwork' 没有可校验的 IPv4 subnet,跳过 TARGET_HOST/subnet 校验。原始 subnet: $($subnets -join ', ')"
+    } else {
+        $targetInNetwork = $false
+        foreach ($subnet in $ipv4Subnets) {
+            if (Test-IPv4InCidr $relayTarget $subnet) { $targetInNetwork = $true; break }
+        }
+        if (-not $targetInNetwork) {
+            Write-Err "TARGET_HOST $relayTarget 不属于 docker 网络 '$MinikubeDockerNetwork' 的 IPv4 subnet: $($ipv4Subnets -join ', ')。"
+            Write-Warn "这通常表示 relay 将挂到错误 Docker 网络,客户端会登录成功但 UDP 进不了 Hub DS。"
+            Write-Warn "请确认 minikube profile '$MinikubeProfile' 与 docker network '$MinikubeDockerNetwork' 匹配,必要时清理旧 minikube network 后重启。"
+            exit 1
+        }
+        Write-Ok "docker 网络 '$MinikubeDockerNetwork' subnet 校验通过: TARGET_HOST $relayTarget ∈ $($ipv4Subnets -join ', ')"
     }
 
     # 4.4 构建中继镜像(纯标准库,很快)
@@ -203,15 +272,15 @@ if ($NoRelay) {
     docker build -t $relayImage $relayDir
     if ($LASTEXITCODE -ne 0) { Write-Err "中继镜像构建失败"; exit 1 }
 
-    # 4.5 起容器:挂 minikube 网络 + 发布宿主 127.0.0.1:7000-8000/udp
-    Write-Info "  docker run --network minikube -p 127.0.0.1:${relayRange}:${relayRange}/udp(发布 1001 个 UDP 端口,稍慢)..."
-    docker run -d --name $relayName --network minikube `
+    # 4.5 起容器:挂 profile 对应 docker 网络 + 发布宿主 127.0.0.1:7000-8000/udp
+    Write-Info "  docker run --network $MinikubeDockerNetwork -p 127.0.0.1:${relayRange}:${relayRange}/udp(发布 1001 个 UDP 端口,稍慢)..."
+    docker run -d --name $relayName --network $MinikubeDockerNetwork `
         -p "127.0.0.1:${relayRange}:${relayRange}/udp" `
         -e "TARGET_HOST=$relayTarget" `
         -e "PORT_RANGE=$relayRange" `
         $relayImage *> $null
     if ($LASTEXITCODE -ne 0) {
-        Write-Err "中继容器启动失败(端口被占用 / minikube 网络不存在)。日志:"
+        Write-Err "中继容器启动失败(端口被占用 / docker 网络 '$MinikubeDockerNetwork' 不存在)。日志:"
         docker logs $relayName 2>$null
         exit 1
     }
@@ -222,7 +291,7 @@ if ($NoRelay) {
         docker logs $relayName 2>$null
         exit 1
     }
-    Write-Ok "UDP 中继(dockerized)已启动:容器 $relayName,--network minikube,转发 127.0.0.1:$relayRange/udp -> ${relayTarget}:$relayRange"
+    Write-Ok "UDP 中继(dockerized)已启动:容器 $relayName,--network $MinikubeDockerNetwork,转发 127.0.0.1:$relayRange/udp -> ${relayTarget}:$relayRange"
     Write-Info "  停止:docker rm -f $relayName    查看:docker logs -f $relayName"
     Write-Info "  验证:发 UDP 到 127.0.0.1:<port> 后,minikube ssh 里 'sudo iptables -t nat -L -n -v | grep dpt:<port>' 的 DNAT 计数应增长。"
 }
