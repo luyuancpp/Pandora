@@ -11,7 +11,7 @@
 //  4. Redis client + Ping(强依赖:订单状态机不可降级)
 //  5. Snowflake Node(order_id 生成)
 //  6. kafka producer(topic=pandora.trade.audit)→ tradeAuditPusher(弱依赖)
-//  7. ResourceLedger(W1 用 NoopResourceLedger 占位)
+//  7. ResourceLedger:真实账本未接入前需显式 allow_noop_ledger=true 才退回 NoopResourceLedger,否则 fail-fast
 //  8. 装配 TradeUsecase → TradeService → gRPC/HTTP server
 //  9. kratos.New(...).Run() 阻塞
 package main
@@ -119,7 +119,16 @@ func main() {
 		helper.Warnw("msg", "kafka_brokers_empty", "hint", "trade audit disabled")
 	}
 
-	// 6. ResourceLedger:W1 占位(总是成功)。真实背包 / 货币原子事务接入后替换。
+	// 6. ResourceLedger:真实背包 / 货币原子结算账本接入前为占位实现(NoopResourceLedger)。
+	// 默认 fail-fast:未显式 allow_noop_ledger=true 即拒绝以「成交不扣减资产」静默启动
+	// (审计:trade 静默 Noop 结算降级);仅联调 / 单测显式开 allow_noop_ledger。
+	if !cfg.Trade.AllowNoopLedger {
+		helper.Errorw("msg", "resource_ledger_not_configured",
+			"hint", "真实资源账本(inventory P2P 原子对转)尚未接入;联调/单测请显式设 trade.allow_noop_ledger=true,生产不可空跑")
+		os.Exit(1)
+	}
+	helper.Warnw("msg", "resource_ledger_noop",
+		"hint", "trade 结算走 NoopResourceLedger(总成功,不真实扣转背包/货币);仅限联调/单测")
 	ledger := biz.NoopResourceLedger{}
 
 	// 7. 装配链

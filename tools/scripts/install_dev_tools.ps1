@@ -17,7 +17,7 @@
 #
 # 工具版本(锁定,跟项目对齐):
 #   buf       v1.50.0   (跟 buf.gen.go.yaml 里 plugin 版本兼容)
-#   mkcert    最新       (���版本锁定需求)
+#   mkcert    最新       (无版本锁定需求)
 #   grpcurl   v1.9.1     (社区主流稳定版)
 #
 # 安装方式:优先 winget,失败回退 scoop,失败再回退 GitHub Release 直接下载。

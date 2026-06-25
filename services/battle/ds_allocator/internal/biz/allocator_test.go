@@ -184,6 +184,74 @@ func TestAllocateBattleReadyWaitTimeout(t *testing.T) {
 	}
 }
 
+// TestAllocateBattleRejectsMismatchedPodHeartbeat:证明 match_id ↔ pod 绑定不可绕过。
+// 一个携带正确 match_id 但 pod 名不符(旧 DS / 孤儿 DS / 抢跑的别局 DS)的心跳,
+// 必须被拒(返回 commandStop)、不得写回镜像、更不得打开 AllocateBattle 的就绪门控:
+// 最终 AllocateBattle 仍因等不到本局 pod 的真实心跳而超时失败,绝不回 ds_addr。
+func TestAllocateBattleRejectsMismatchedPodHeartbeat(t *testing.T) {
+	ctx := context.Background()
+	uc, repo := newUsecase(t)
+
+	type out struct {
+		res *AllocateResult
+		err error
+	}
+	done := make(chan out, 1)
+	go func() {
+		res, err := uc.AllocateBattle(ctx, 7, []uint64{10, 20}, 1, "5v5_ranked")
+		done <- out{res, err}
+	}()
+
+	// 等 warming 镜像出现(本局 pod = pandora-battle-7),记录其分配时刻。
+	deadline := time.Now().Add(3 * time.Second)
+	var rec *dsv1.BattleStorageRecord
+	for {
+		b, found, err := repo.GetBattle(ctx, 7)
+		if err == nil && found && b.DsPodName != "" {
+			rec = b
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("warming record for match 7 never appeared")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	for time.Now().UnixMilli() <= rec.AllocatedAtMs {
+		time.Sleep(time.Millisecond)
+	}
+
+	// 用「错误的 pod 名」上报 running 心跳:必须被门控拒绝并令其停机。
+	hbRes, err := uc.Heartbeat(ctx, 7, "pandora-battle-999", 2, "running", time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("mismatched heartbeat returned hard error: %v", err)
+	}
+	if hbRes.Command != commandStop {
+		t.Fatalf("mismatched-pod heartbeat command = %q, want stop", hbRes.Command)
+	}
+
+	// 镜像不得被异局心跳污染:仍停在 warming、未刷新到分配时刻之后。
+	got, _, _ := repo.GetBattle(ctx, 7)
+	if got.State != stateWarming {
+		t.Fatalf("state = %q, want warming (foreign heartbeat must not flip state)", got.State)
+	}
+	if got.LastHeartbeatMs > got.AllocatedAtMs {
+		t.Fatalf("LastHeartbeatMs %d must stay <= AllocatedAtMs %d (foreign heartbeat must not refresh)",
+			got.LastHeartbeatMs, got.AllocatedAtMs)
+	}
+
+	// 门控不得放行:AllocateBattle 仍超时失败,绝不返回 ds_addr。
+	r := <-done
+	if r.err == nil {
+		t.Fatalf("AllocateBattle must fail when only a mismatched pod heartbeat arrived, got addr=%q", r.res.DSAddr)
+	}
+	if errcode.As(r.err) != errcode.ErrDSAllocationFailed {
+		t.Fatalf("err code = %v, want ErrDSAllocationFailed", errcode.As(r.err))
+	}
+	if _, found, _ := repo.GetBattle(ctx, 7); found {
+		t.Fatal("battle record must be cleaned up after ready wait timeout")
+	}
+}
+
 func TestAllocateBattleIdempotent(t *testing.T) {
 	ctx := context.Background()
 	uc, repo := newUsecase(t)

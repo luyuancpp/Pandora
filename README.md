@@ -51,6 +51,15 @@ pwsh tools/scripts/start.ps1
 # 也可双击仓库根的 start.cmd(无参数 = local 模式)
 ```
 
+UE 本机联调可以直接用同版本发行版 Editor 当客户端:先启动 `local`/`play.ps1 -Battle`,
+再在 Editor 里 Play/New Editor Window/Standalone 登录即可进 Hub DS。不是必须启动已打包
+Windows client;打包 client 主要用于更接近发行环境的最终回归。也可用:
+
+```powershell
+pwsh tools/scripts/play.ps1 -Battle -OpenEditor
+pwsh tools/scripts/play.ps1 -Battle -OpenClient
+```
+
 五种启动方式(`-Mode`):
 
 | 模式      | 说明                                                          | DS   | 命令 |
@@ -65,6 +74,12 @@ pwsh tools/scripts/start.ps1
 > (本机 Agones)或 `local`(宿主直接 exec Windows DS)。`k8s` 模式起完后再跑
 > `pwsh tools/scripts/e2e_k8s.ps1`(load DS 镜像 + 起宿主 Envoy 桥接 + 等 Fleet + UDP 中继),
 > 详见 `deploy/k8s/agones/README.md`。
+> `local` 模式依赖 cook 好的 WindowsServer staged 包。先跑
+> `pwsh tools/scripts/build_windows_server_ds.ps1`,并让 allocator 配置指向
+> `F:\work\PandoraDSArchive\WindowsServerLocal\Pandora\Binaries\Win64\PandoraServer.exe`;
+> 不能使用 `Pandora\Binaries\Win64` 下的裸 server 二进制,否则 DS 加载资产会崩。
+> 本地 dev 的 DS 面 Envoy `:8444` 是明文 grpc-web,local DS env 里 `PANDORA_DS_ALLOCATOR_TLS`
+> 应保持 `0`。
 >
 > **线上真集群**:Fleet 的 DS 镜像与回调地址必须按环境注入,否则远端拉不到镜像/回调打空,
 > 故 `-Mode online` 强制要求 `-BattleDsImage` / `-HubDsImage` / `-DsGatewayAddr`(缺一即 fail-fast):

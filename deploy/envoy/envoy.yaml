@@ -78,6 +78,22 @@ static_resources:
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
 
+          # ⭐ 安全:剥离客户端伪造的身份头(必须排在 jwt_authn 之前)。
+          # jwt_authn 的 claim_to_headers 只在「命中 rules 的鉴权 path」上覆写 x-pandora-player-id;
+          # 对 bypass / allow_missing 的 path(login.Login / VerifyDSTicket / reflection),jwt_authn
+          # 不跑 claim_to_headers,客户端自带的 x-pandora-player-id / x-pandora-jwt-payload 会原样透传
+          # 给上游,上游 pmw.AuthOptional 会信任 → 任意未登录客户端可伪造 player_id(越权)。
+          # 这里在入站第一时间无条件删掉这两个头,jwt_authn 随后只在鉴权成功时重新写入权威值;
+          # 未鉴权 path 上游拿到的 player_id 恒为 0(匿名),无法被伪造。
+          # ⚠️ 改动后部署前由 Codex 跑 `envoy --mode validate -c envoy.yaml` 确认 filter 可用(header_mutation 需 Envoy ≥ 1.25)。
+          - name: envoy.filters.http.header_mutation
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+              mutations:
+                request_mutations:
+                - remove: "x-pandora-player-id"
+                - remove: "x-pandora-jwt-payload"
+
           # ⭐ W3 ①:JWT 鉴权(HS256 + local_jwks)
           # provider pandora_session 用 login 服务签发的 SessionToken,issuer / audience
           # 必须跟 login etc/login-dev.yaml 的 login.jwt 完全一致。
@@ -291,6 +307,16 @@ static_resources:
           - name: envoy.filters.http.grpc_web
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb
+          # ⭐ 安全:DS 面不挂 jwt_authn,内部服务用 pmw.AuthOptional 直接读 x-pandora-player-id。
+          # DS→后端调用不该携带玩家身份头(SetLocation 的 player_id 在 body 里、由 DS 票据约束),
+          # 故无条件剥离客户端/DS 伪造的 x-pandora-player-id / x-pandora-jwt-payload,防止 DS 越权冒充玩家。
+          - name: envoy.filters.http.header_mutation
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+              mutations:
+                request_mutations:
+                - remove: "x-pandora-player-id"
+                - remove: "x-pandora-jwt-payload"
           # 注意:DS 面不挂 jwt_authn(见上方鉴权说明)。
           - name: envoy.filters.http.router
             typed_config:

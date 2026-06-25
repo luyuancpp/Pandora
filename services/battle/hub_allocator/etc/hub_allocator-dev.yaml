@@ -93,7 +93,7 @@ hub:
   # mock_hub_addr_host: Mock 分片返回的假 Hub DS host
   mock_hub_addr_host: "127.0.0.1"
   # mock_hub_port_base: Mock 分片端口基址(分片 port = base + shard_id)
-  mock_hub_port_base: 7777
+  mock_hub_port_base: 7776
 
 # W4 ⑬: 真 Agones Hub DS Fleet 发现配置。
 # dev 默认 enabled=false 走 Mock(本机无 k8s/Agones 也能跑 hub_allocator)。
@@ -112,7 +112,8 @@ agones:
 # 本机拉起一个常驻 Windows Hub DS 调试模式(mode=local 时生效)。
 # hub_allocator 首次 AssignHub 时 exec 一个常驻 UE Windows DS(加载大厅关卡 / PandoraHubGameMode),
 # 把它作为唯一分片返回;进程随 hub_allocator 退出而 Kill。常驻不按对局回收(与战斗 DS 不同)。
-# 与战斗 DS 同一个 PandoraServer.exe,靠 map_name 区分大厅/战斗关卡;端口与战斗 DS(7800+)错开用 7777。
+# 与战斗 DS 同一个 staged/cooked PandoraServer.exe,靠 map_name 区分大厅/战斗关卡;端口与战斗 DS(7800+)错开用 7777。
+# 不能指向 Pandora/Binaries/Win64 裸二进制,否则缺 cooked 内容会在加载资产时崩溃。
 local_hub:
   executable_path: "F:\\work\\PandoraDSArchive\\WindowsServerLocal\\Pandora\\Binaries\\Win64\\PandoraServer.exe"
   map_name: "/Game/Test/Level/MainCity?game=/Script/Pandora.PandoraHubGameMode" # 大厅关卡(留空用 DS 默认关卡)
@@ -120,10 +121,11 @@ local_hub:
   port: 7777                                   # 常驻 Hub DS 监听端口
   # region: "cn"                               # 留空取 hub.default_region
   # capacity: 500                              # 留空取 hub.default_capacity
-  working_dir: "F:\\work\\PandoraDSArchive\\WindowsServerLocal\\Pandora" # DS 进程工作目录
+  working_dir: "F:\\work\\PandoraDSArchive\\WindowsServerLocal" # DS 进程工作目录(staged 根目录)
   log_dir: "run/dev/logs/ds"                   # Hub DS stdout/stderr 落 pandora-hub-local.log
   # extra_args: ["-PANDORA_BACKEND=https://127.0.0.1:8444"]
   extra_env:
     PANDORA_HUB_ALLOCATOR_ADDR: "127.0.0.1:8444"
     PANDORA_PLAYER_LOCATOR_ADDR: "127.0.0.1:8444"
-    PANDORA_DS_ALLOCATOR_TLS: "1"
+    # 本地 dev 的 Envoy DS 面 :8444 是明文 grpc-web(见 deploy/envoy/envoy.yaml pandora_ds_listener)。
+    PANDORA_DS_ALLOCATOR_TLS: "0"

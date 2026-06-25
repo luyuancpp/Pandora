@@ -80,8 +80,8 @@ agones:
 
 # 本机拉起 Windows Dedicated Server 调试模式(mode=local 时生效)。
 # 匹配成局后 ds_allocator 直接 exec 打包好的 UE Windows DS,分配本机端口返回真实地址。
-# 本机调试步骤:① UE 打包 Windows Server 版(产出 PandoraServer.exe)
-#              ② executable_path 指向该 PandoraServer.exe
+# 本机调试步骤:① pwsh tools/scripts/build_windows_server_ds.ps1 打出 staged/cooked WindowsServer 包
+#              ② executable_path 指向 staged 包里的 PandoraServer.exe(不要用 Pandora/Binaries 裸二进制)
 #              ③ 顶部 mode 置 "local"
 local_ds:
   enabled: true
@@ -90,11 +90,12 @@ local_ds:
   advertise_host: "127.0.0.1"                  # 返回给客户端 NetDriver 连接的 host
   port_base: 7800                              # 战斗 DS 端口池基址(与 hub 7777 错开)
   port_range: 100                              # 端口池大小,实际端口在 [base, base+range) 取空闲
-  working_dir: "F:\\work\\PandoraDSArchive\\WindowsServerLocal\\Pandora" # DS 进程工作目录
+  working_dir: "F:\\work\\PandoraDSArchive\\WindowsServerLocal" # DS 进程工作目录(staged 根目录)
   log_dir: "run/dev/logs/ds"                   # 每个 DS 进程 stdout/stderr 落 <pod>.log
   # extra_args: ["-PANDORA_BACKEND=https://127.0.0.1:8444"]  # 追加 UE DS 命令行参数
   extra_env:                                   # 注入 DS 进程额外环境变量
     PANDORA_DS_ALLOCATOR_ADDR: "127.0.0.1:8444"
     PANDORA_PLAYER_LOCATOR_ADDR: "127.0.0.1:8444"
     PANDORA_BATTLE_RESULT_ADDR: "127.0.0.1:8444"
-    PANDORA_DS_ALLOCATOR_TLS: "1"
+    # 本地 dev 的 Envoy DS 面 :8444 是明文 grpc-web(见 deploy/envoy/envoy.yaml pandora_ds_listener)。
+    PANDORA_DS_ALLOCATOR_TLS: "0"

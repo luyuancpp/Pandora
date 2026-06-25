@@ -17,6 +17,8 @@
   双击 仓库根目录\策划一键启动-含战斗.cmd   # 本地战斗版(宿主 go 进程 + Windows DS)
   pwsh tools/scripts/play.ps1                # 启动(docker)
   pwsh tools/scripts/play.ps1 -Battle       # 本地战斗版
+  pwsh tools/scripts/play.ps1 -Battle -OpenEditor  # 启动后端后打开 UE Editor 当客户端
+  pwsh tools/scripts/play.ps1 -Battle -OpenClient  # 启动后端后打开已打包 Windows 客户端
   pwsh tools/scripts/play.ps1 -Stop         # 停止
   pwsh tools/scripts/play.ps1 -Status       # 看状态
 #>
@@ -24,7 +26,9 @@
 param(
     [switch]$Stop,     # 停止整套后端
     [switch]$Status,   # 只看状态,不启动
-    [switch]$Battle    # 本地战斗模式:宿主 go 进程 + Windows DS(进 hub→匹配→battle 战斗)
+    [switch]$Battle,   # 本地战斗模式:宿主 go 进程 + Windows DS(进 hub→匹配→battle 战斗)
+    [switch]$OpenEditor, # 启动完成后打开发行版 UE Editor,用 PIE/Standalone 当客户端进服
+    [switch]$OpenClient  # 启动完成后打开已打包 Windows 客户端
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,6 +36,9 @@ $ScriptDir   = $PSScriptRoot
 $ProjectRoot = (Resolve-Path "$ScriptDir/../..").Path
 $StartPs1    = Join-Path $ScriptDir 'start.ps1'
 $DsAllocConf = Join-Path $ProjectRoot 'services/battle/ds_allocator/etc/ds_allocator-dev.yaml'
+$UeProject   = 'F:\work\Pandora-Client-SVN\Pandora\Pandora.uproject'
+$UeEditorExe = 'F:\UnrealEngine-5.8.0-release\Engine\Binaries\Win64\UnrealEditor.exe'
+$PackagedClientExe = 'F:\work\Pandora-Client-SVN\Pandora\Saved\StagedBuilds\Windows\Pandora.exe'
 
 # ===== 输出辅助 =====
 function Write-Info($m) { Write-Host "[INFO] $m" -ForegroundColor Cyan }
@@ -42,6 +49,40 @@ function Write-Step($m) { Write-Host "`n===== $m =====" -ForegroundColor Magenta
 
 function Test-CommandExists([string]$cmd) {
     return [bool](Get-Command $cmd -ErrorAction SilentlyContinue)
+}
+
+function Open-UeEditorClient {
+    if (-not (Test-Path $UeEditorExe)) {
+        Write-Warn "找不到 UE Editor:$UeEditorExe"
+        Write-Warn '       可手动打开同版本发行版 Editor,再打开 Pandora.uproject。'
+        return
+    }
+    if (-not (Test-Path $UeProject)) {
+        Write-Warn "找不到 UE 工程:$UeProject"
+        return
+    }
+    Write-Info '打开 UE Editor。进工程后用 Play/Standalone 作为客户端登录;不要用 Listen Server。'
+    Start-Process -FilePath $UeEditorExe -ArgumentList "`"$UeProject`"" | Out-Null
+}
+
+function Open-PackagedClient {
+    if (-not (Test-Path $PackagedClientExe)) {
+        Write-Warn "找不到已打包 Windows 客户端:$PackagedClientExe"
+        Write-Warn '       可先用 UE 打 Windows Client 包,或直接用 -OpenEditor 进 Editor 测。'
+        return
+    }
+    Write-Info '打开已打包 Windows 客户端。'
+    Start-Process -FilePath $PackagedClientExe -WorkingDirectory (Split-Path -Parent $PackagedClientExe) | Out-Null
+}
+
+function Maybe-OpenUeClient {
+    if ($OpenEditor -and $OpenClient) {
+        Write-Warn '同时传了 -OpenEditor / -OpenClient;只打开 Editor。'
+        Open-UeEditorClient
+        return
+    }
+    if ($OpenEditor) { Open-UeEditorClient; return }
+    if ($OpenClient) { Open-PackagedClient; return }
 }
 
 function Test-DockerRunning {
@@ -209,8 +250,12 @@ if ($Battle) {
     if ($rc -eq 0) {
         Write-Ok '本地战斗版后端已启动!'
         Write-Host '  - 客户端网关(Envoy): https://127.0.0.1:8443' -ForegroundColor Green
+        Write-Host '  - 可以直接用发行版 UE Editor 当客户端: Play/New Editor Window/Standalone 后登录即可进 Hub DS。' -ForegroundColor Green
+        Write-Host '  - 不必须起已打包 client;打包 client 只用于更接近发行环境的最终验证。' -ForegroundColor Green
         Write-Host '  - 现在用 UE 客户端登录 → 进大厅 → 匹配,成局后会自动拉起本机 Windows DS 进战斗。' -ForegroundColor Green
+        Write-Host '  - 一键打开:    pwsh tools/scripts/play.ps1 -Battle -OpenEditor  或  -OpenClient' -ForegroundColor DarkGray
         Write-Host '  - 停止:        pwsh tools/scripts/play.ps1 -Battle -Stop' -ForegroundColor DarkGray
+        Maybe-OpenUeClient
     } else {
         Write-Err '启动过程中出错了,请把上面的红色 [ERR] 信息发给后端同学。'
     }
@@ -231,8 +276,10 @@ Write-Host ''
 if ($rc -eq 0) {
     Write-Ok '后端已启动!'
     Write-Host '  - 客户端网关(Envoy): https://127.0.0.1:8443' -ForegroundColor Green
+    Write-Host '  - docker 模式 DS=mock,只能测登录/业务;要进真实 Hub/Battle DS 请用 -Battle。' -ForegroundColor Yellow
     Write-Host '  - 看运行状态:  双击 策划一键启动.cmd 旁边的 -Status,或 pwsh tools/scripts/play.ps1 -Status' -ForegroundColor DarkGray
     Write-Host '  - 停止:        双击 策划一键停止.cmd' -ForegroundColor DarkGray
+    Maybe-OpenUeClient
 } else {
     Write-Err '启动过程中出错了,请把上面的红色 [ERR] 信息发给后端同学。'
 }

@@ -2,7 +2,7 @@
 // 统计(请求/响应字节数、调用次数、平均/最大延迟),按周期通过 logx
 // 打印 TopN 报告。运行时通过 Enable/Disable 切换采集开关。
 //
-// ��接复用自 mmorpg/go/shared/grpcstats/。
+// 直接复用自 mmorpg/go/shared/grpcstats/。
 //
 // 使用:
 //

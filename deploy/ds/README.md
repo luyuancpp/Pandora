@@ -14,14 +14,20 @@
       ▼
 matchmaker ──► ds_allocator ──POST GameServerAllocation──► Agones
                                                               │ 选一个 Ready 的 pandora-battle GameServer
-                                                              ▼  转 Allocated + 打 match-id label
+                                                              ▼  转 Allocated + 打 pandora.dev/match-id label
                                                         Linux DS Pod
                                                         ├─ 容器: pandora/battle-ds  ← deploy/ds 构建
                                                         └─ sidecar: agones-sdk (自动注入)
                                                               ▲
                        UPandoraAgonesSubsystem ──HTTP(127.0.0.1:$AGONES_SDK_HTTP_PORT)──┘
-                       Ready / Health / GET gameserver(读 match-id) / Shutdown
-ds_allocator 把 address:port 回给客户端 ──► 客户端 ClientTravel 进 DS 打这局
+                       Agones Ready / Health / GET gameserver(读 match-id) / Shutdown
+                                                              │
+                                                              ▼
+                       DS 拿到 match_id 后才上报 Pandora ready 心跳
+ds_allocator 收到该心跳才下发 address:port ──► matchmaker push match_ready/READY
+                                                              │
+                                                              ▼
+                                                   客户端 ClientTravel 进 DS 打这局
 ```
 
 ---

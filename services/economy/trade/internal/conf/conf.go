@@ -30,6 +30,11 @@ type TradeConf struct {
 
 	// MaxItemsPerOrder 单订单最大物品条目数(默认 20)。
 	MaxItemsPerOrder int `yaml:"max_items_per_order,omitempty" json:"max_items_per_order,omitempty"`
+
+	// AllowNoopLedger 显式允许在没有接入真实资源账本时退回 NoopResourceLedger(占位,结算永远成功、
+	// 不真实扣转背包 / 货币)。默认 false:未接真实账本即 fail-fast,防止生产漏配后仍以「成交不扣减」静默启动
+	// (审计:trade 静默 Noop 结算降级)。真实账本(inventory P2P 原子对转 RPC)接入前,仅联调 / 单测显式置 true。
+	AllowNoopLedger bool `yaml:"allow_noop_ledger,omitempty" json:"allow_noop_ledger,omitempty"`
 }
 
 // Defaults 填默认值,防止 yaml 缺字段时零值引发非预期行为。

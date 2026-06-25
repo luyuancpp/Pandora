@@ -235,6 +235,7 @@ Module 路径:`github.com/luyuancpp/pandora/services/<域>/<服务>`
 4. **Linux 工具链已装**:机器级 `LINUX_MULTIARCH_ROOT = C:\UnrealToolchains\v26_clang-20.1.8-rockylinux8`。
 5. **客户端工程**:`C:\work\Pandora-Client-SVN\Pandora\Pandora.uproject`,已有 `Pandora`(Game)/`PandoraEditor`/`PandoraServer`(`Type=TargetType.Server`)。
 6. **DS 打包脚本**:`C:\work\Pandora-Client-SVN\Tool\Server\Agones\build-linux-ds.ps1`,已改成自动锁定源码版引擎(扫 HKCU `Builds` 里无 `InstalledBuild.txt` 的那个);**未改** `Pandora.uproject` 的 `EngineAssociation`(保持 `"5.7"`,不把本机 GUID 提交进 SVN)。
+7. **Windows local DS**:`local` 模式不能用 `Pandora\Binaries\Win64\PandoraServer.exe` 裸二进制,必须先用 `tools/scripts/build_windows_server_ds.ps1` 打 cook/stage/pak 后的 WindowsServer 包,再把 hub/ds allocator 指到 staged `PandoraServer.exe` 与 staged 根目录;缺 cooked 内容会出现 AssetRegistry/BufferReader 崩溃。
 
 ### 7.2 引擎选型纪律
 

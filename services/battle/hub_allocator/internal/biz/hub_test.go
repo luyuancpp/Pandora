@@ -522,16 +522,31 @@ func TestTransferHub_SetAssignmentFailRollback(t *testing.T) {
 	}
 }
 
-func TestHeartbeat_OrphanReturnsStop(t *testing.T) {
+func TestHeartbeat_SeedsTopologyBeforeCommand(t *testing.T) {
 	uc, _, _ := newTestUsecase(500, 3)
 	ctx := context.Background()
-	// 无对应分片镜像 → stop
+
+	// 没有 Redis 分片镜像时，首跳先刷新 Fleet 拓扑并重试，避免新 Hub 被误判孤儿。
+	res, err := uc.Heartbeat(ctx, "pandora-hub-global-1", 42, "ready", time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("heartbeat err: %v", err)
+	}
+	if res.Command != commandNone {
+		t.Fatalf("seeded heartbeat want no command, got %q", res.Command)
+	}
+}
+
+func TestHeartbeat_UnknownShardWaitsForTopology(t *testing.T) {
+	uc, _, _ := newTestUsecase(500, 3)
+	ctx := context.Background()
+
+	// Fleet 刷新后仍不存在的 pod 不立刻 stop；下一轮拓扑就绪/清理流程再处理。
 	res, err := uc.Heartbeat(ctx, "pandora-hub-ghost-9", 0, "ready", time.Now().UnixMilli())
 	if err != nil {
 		t.Fatalf("heartbeat err: %v", err)
 	}
-	if res.Command != commandStop {
-		t.Fatalf("orphan want stop, got %q", res.Command)
+	if res.Command != commandNone {
+		t.Fatalf("unknown shard want no command, got %q", res.Command)
 	}
 }
 

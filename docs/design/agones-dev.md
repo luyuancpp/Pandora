@@ -174,6 +174,9 @@
 ⑧ ds_allocator biz 写 warming 镜像 → 等 DS 心跳 ready → 返回
         ⚠ Agones state=Allocated 只说明 pod 被分配,不代表 DS 进程已读到 pandora.dev/match-id;
           若此时就把 ds_addr 回给 matchmaker,客户端太快连入时 DS 内部 match_id 仍为 0,PreLogin 会拒票。
+        ✅ 权威门控:DS 必须先实时感知自己已 Allocated,并从 Agones GameServer
+          metadata.labels["pandora.dev/match-id"] 读到 match_id 后,才允许上报 Pandora
+          业务 Heartbeat 的 state=ready/running;在此之前绝不上报 ready。
         repo.CreateBattle(BattleStorageRecord{match_id, ds_pod_name, ds_addr, state=warming,
           player_ids, allocated_at_ms, last_heartbeat_ms=now, ...}) → Redis pandora:ds:battle:{match_id}
         同步登记 active ZSET(score=last_heartbeat_ms,供心跳超时 sweep,不变量 §4)
@@ -206,6 +209,12 @@
   `pandora-battle` Fleet 的 `replicas` 必须 ≥ 预期并发开局数。
 - **职责切分**:`ds_allocator` 只「拉 pod 返地址」**不签票据**;battle DSTicket 由 `matchmaker` 用
   `pkg/auth.Signer` 签(不变量 §3 短时效 5min + §6 DS 不可信)。
+- **唯一权威门控**:`GameServerAllocation` 负责把 Ready GameServer 转成 Allocated 并打
+  `pandora.dev/match-id` label;DS 读到该 label 后才上报 `ready` 业务心跳;`ds_allocator`
+  收到这次带正确 `match_id`/`pod` 且晚于 `allocated_at_ms` 的心跳后才下发 `ds_addr`;
+  `matchmaker` 只有拿到该返回后才 push `match_ready`/`MatchProgress{stage=READY}`。因此客户端
+  连入 Battle DS 时,`PreLogin` 依赖的 `match_id` 必然在 DS 内已就绪,不会再因 `match_id=0`
+  竞态把玩家踢掉。
 - **幂等**:步骤 ④ 同 `match_id` 已有镜像直接回,防 matchmaker 重试导致重复 `GameServerAllocation`
   浪费 Fleet 容量。
 - **provider 无关**:步骤 ⑤ 用标准库 `net/http` 直连 k8s apiserver REST,不引 agones/client-go;
@@ -415,7 +424,7 @@ Installed Build 不是天然不兼容。它从源码版引擎产出,默认会继
 | 字段 | UE 填法 |
 |---|---|
 | `ds_pod_name` | Agones GameServer 名 |
-| `match_id` | 本对局 match_id（从 battle_ticket / 分配时下发取）|
+| `match_id` | 本对局 match_id（必须先从 Agones GameServer label `pandora.dev/match-id` 读到并缓存；未读到前不得上报 `ready`/`running`）|
 | `player_count` | 当前战斗内人数 |
 | `state` | `"warming"` / `"ready"` / `"running"` / `"ended"` |
 | `ts_ms` | `now` 毫秒 |

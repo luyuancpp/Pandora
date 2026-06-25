@@ -2575,3 +2575,48 @@ unit_price)/ `SettleAuctionMatchResponse`(code)。`pwsh tools/scripts/proto_gen.
 - **真依赖联调**:本轮单测全内存 fake,未跑真 MySQL / gRPC 端到端(环境启停交 Codex / 人,§11.1)。
 - **Codex 收尾**:cpp pb 同步 UE 仓库([proto]);go.sum 复核;git 收尾等用户「帮我 commit」
   (建议 scope `feat(auction): 拍卖成交接 inventory 真实结算 [proto]`,Claude 不做 git)。
+
+## W5 Codex 收尾 ✅ auction escrow 真依赖本机冒烟通过(2026-06-24)
+
+承接 Claude / Copilot 交接的「拍卖行四项遗留局限补齐」后续环境窗口,Codex 按
+AGENTS.md §11.1 做验证与环境收尾,不改业务逻辑。
+
+### 代码级复核
+
+- 当前 HEAD 为 `ba9b93c feat(auction): 补齐 escrow 与过期清扫 [proto]`,该提交已包含
+  escrow 冻结 / 退还、跨实例 market lock、过期清扫和文档登记。
+- 本地重新跑:
+  - `services/economy/auction`: `go build ./...` / `go vet ./...` / `go test ./... -count=1` 全通过。
+  - `services/economy/inventory`: `go build ./...` / `go vet ./...` / `go test ./... -count=1` 全通过。
+  - `pkg`: `go build ./...` / `go vet ./...` / `go test ./... -count=1` 全通过。
+  - `proto`: `go test ./...` 全通过。
+
+### 环境发现
+
+- 当前 50015 / 50016 被既有 k8s port-forward 占用;反射显示 k8s 内 inventory 仍是旧镜像,
+  只暴露到 `SettleAuctionMatch`,缺少 HEAD 新增的 `FreezeForOrder` / `ReleaseEscrow`。
+  因此没有用这套旧 k8s 镜像做最终验收;后续若要验证集群版,需先重建 / 滚动 inventory 与 auction 镜像。
+- 本机 Docker dev MySQL 长期 volume 未自动重放新 init SQL,Codex 已幂等执行:
+  `01-create-databases.sql` / `08-inventory-tables.sql` / `09-auction-tables.sql`,
+  补齐 `pandora_auction` 库、`auction_orders` / `auction_matches` 和 `auction_escrow` 表。
+
+### 真依赖冒烟
+
+- 为避开既有 port-forward,Codex 用临时 ignored 配置启动最新源码:
+  inventory `:50115`、auction `:50116`,连本机 Docker MySQL `3307`、Redis `6380`、Kafka `9093`。
+- grpcurl 跑通完整链路:
+  1. `GrantItems` 给 seller 发 10 个 `item_config_id=3001`,给 buyer 发 1000 金币。
+  2. seller `PlaceOrder(market=392047,item=3001,qty=3,price=20)` → 卖单 `OPEN`。
+  3. buyer `Bid(qty=2,price=25)` → 买单 `FILLED`,成交价按被动卖单价 `20`。
+  4. inventory 日志确认真实调用 `FreezeForOrder`(卖单/买单各一次)、
+     `SettleAuctionMatch`、`ReleaseEscrow`。
+  5. 查询结果:seller 活跃背包剩 7 个道具并收到 40 金币;buyer 金币 1000→960 并得到 2 个道具;
+     卖单 `PARTIALLY_FILLED(filled=2/3)`,买单 `FILLED`。
+  6. DB 回查:`auction_matches` 有 1 条成交;卖家 escrow 剩 1 个道具 active,买家 escrow closed 且残余金币退还。
+- 冒烟结束后已停止临时进程,删除临时配置/二进制/日志,并清理本次测试玩家 / 市场的 MySQL 行与 Redis 订单簿 key。
+
+### 当前状态
+
+- auction escrow / settlement 本机真依赖链路已通过。
+- k8s 环境仍需重建 / 滚动到 HEAD 后再跑集群版冒烟。
+- git commit / push 未执行;当前工作树另有 battle_result / hub_allocator 未提交改动,本轮未触碰。

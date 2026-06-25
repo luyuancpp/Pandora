@@ -61,6 +61,22 @@ type MatchReleaser interface {
 	ReleaseMatch(ctx context.Context, matchID uint64, playerIDs []uint64) error
 }
 
+// DSReleaser 通知 ds_allocator 回收一场已正常结算对局的战斗 DS 账本(内部 RPC)。
+//
+// 背景:ds_allocator 暴露 ReleaseBattle(对局结束/异常回收 DS),原本无生产调用方 →
+// 正常局结束只靠 DS 自身 Agones Shutdown(pod 优雅下线)+ 心跳停止后被 sweep 的 ended 分支
+// 移出 active,后端账本(Redis 镜像 / active ZSET)与现实最长差 ~15s、镜像留至 2h TTL。
+// battle_result 正常结算落库后调此接口主动回收,使账本即时一致。
+//
+// 语义边界:DS 自身 Agones Shutdown 仍是 pod 优雅下线的权威路径(它才知道客户端是否已 travel
+// 回大厅);本调用对 pod 是幂等兜底(DS 已自停 → GS 不存在,Release 走幂等 no-op,只清账本;
+// DS 结算后崩溃没来得及自停 → 即时回收 pod,不必等 sweep)。
+//
+// best-effort 弱依赖:实现可为 nil(ds_allocator 地址未配),调用失败仅 Warn 不影响结算落库。
+type DSReleaser interface {
+	ReleaseBattle(ctx context.Context, matchID uint64, reason string) error
+}
+
 // StaticMMRReader 是固定返回 base 的 MMRReader(player 服务未上线时兜底)。
 type StaticMMRReader struct {
 	base int
@@ -74,21 +90,23 @@ func (s *StaticMMRReader) GetMMR(_ context.Context, _ uint64) (int, error) { ret
 
 // BattleResultUsecase 是 battle_result 业务逻辑核心。
 type BattleResultUsecase struct {
-	repo     data.BattleRepo
-	mmr      MMRReader
-	pusher   PlayerUpdatePusher
-	releaser MatchReleaser
-	cfg      conf.BattleConf
+	repo       data.BattleRepo
+	mmr        MMRReader
+	pusher     PlayerUpdatePusher
+	releaser   MatchReleaser
+	dsReleaser DSReleaser
+	cfg        conf.BattleConf
 }
 
 // NewBattleResultUsecase 构造。pusher 可为 nil:player.update 已写事务出箱,
 // pusher/producer 不可用时出箱积压不丢,等 producer 可用后由发布器补发(当前需重启/重配)。
 // releaser 可为 nil:matchmaker 地址未配时跳过对局状态释放(best-effort 弱依赖)。
-func NewBattleResultUsecase(repo data.BattleRepo, mmr MMRReader, pusher PlayerUpdatePusher, releaser MatchReleaser, cfg conf.BattleConf) *BattleResultUsecase {
+// dsReleaser 可为 nil:ds_allocator 地址未配时跳过战斗 DS 账本回收(best-effort 弱依赖)。
+func NewBattleResultUsecase(repo data.BattleRepo, mmr MMRReader, pusher PlayerUpdatePusher, releaser MatchReleaser, dsReleaser DSReleaser, cfg conf.BattleConf) *BattleResultUsecase {
 	if mmr == nil {
 		mmr = NewStaticMMRReader(cfg.BaseMMR)
 	}
-	return &BattleResultUsecase{repo: repo, mmr: mmr, pusher: pusher, releaser: releaser, cfg: cfg}
+	return &BattleResultUsecase{repo: repo, mmr: mmr, pusher: pusher, releaser: releaser, dsReleaser: dsReleaser, cfg: cfg}
 }
 
 // releaseMatch 落库成功后通知 matchmaker 释放本局撮合状态。best-effort:实现缺省 / 失败
@@ -105,6 +123,21 @@ func (u *BattleResultUsecase) releaseMatch(ctx context.Context, result *battlev1
 	}
 	if err := u.releaser.ReleaseMatch(ctx, result.GetMatchId(), playerIDs); err != nil {
 		plog.With(ctx).Warnw("msg", "match_release_failed", "match_id", result.GetMatchId(), "err", err)
+	}
+}
+
+// releaseDS 正常结算落库后通知 ds_allocator 回收战斗 DS 账本(Redis 镜像 + active ZSET)。
+// best-effort:实现缺省 / 失败仅 Warn,绝不影响结算落库(弱依赖,不变量:结算是权威路径,
+// 账本回收只是即时对齐)。幂等:ds_allocator.ReleaseBattle 镜像不存在视为已释放。
+//
+// 仅正常结算调用:abandoned 的 pod 已由 ds_allocator 自身 sweep 回收、镜像有意 ExpireBattle
+// 保留供查询/诊断,这里不再调以免提前删除诊断镜像(详见 HandleAbandoned 调用点注释)。
+func (u *BattleResultUsecase) releaseDS(ctx context.Context, matchID uint64, reason string) {
+	if u.dsReleaser == nil {
+		return
+	}
+	if err := u.dsReleaser.ReleaseBattle(ctx, matchID, reason); err != nil {
+		plog.With(ctx).Warnw("msg", "ds_release_failed", "match_id", matchID, "reason", reason, "err", err)
 	}
 }
 
@@ -159,6 +192,13 @@ func (u *BattleResultUsecase) ReportResult(ctx context.Context, result *battlev1
 
 	// 结算落库成功 → 通知 matchmaker 释放本局撮合状态(玩家回 Hub 可立刻再匹配)。
 	u.releaseMatch(ctx, result)
+
+	// 正常结算额外通知 ds_allocator 即时回收战斗 DS 账本(幂等兜底);abandoned 不在此调:
+	// 其 pod 已由 ds_allocator sweep 回收、镜像有意保留供诊断(见 releaseDS / HandleAbandoned)。
+	// 此处只覆盖正常结算:ReportResult 收到 ABANDONED 是防伪兜底语义,不主动回收 DS。
+	if result.GetOutcome() != battlev1.BattleOutcome_BATTLE_OUTCOME_ABANDONED {
+		u.releaseDS(ctx, result.GetMatchId(), "completed")
+	}
 	return false, nil
 }
 
@@ -206,6 +246,8 @@ func (u *BattleResultUsecase) HandleAbandoned(ctx context.Context, matchID uint6
 	plog.With(ctx).Infow("msg", "battle_abandoned_recorded", "match_id", matchID, "players", len(playerIDs))
 
 	// 废弃对局补偿落库成功 → 同样释放撮合状态(玩家可立刻再匹配)。
+	// 注意:这里不调 releaseDS——ABANDONED 事件正是 ds_allocator sweep 发来的,它已回收 pod 并
+	// 用 ExpireBattle 有意保留镜像供查询/诊断;再调 ReleaseBattle 会提前删除该诊断镜像。
 	u.releaseMatch(ctx, result)
 	return nil
 }

@@ -111,9 +111,26 @@ type simpleErr string
 
 func (e simpleErr) Error() string { return string(e) }
 
+// fakeDSReleaser 捕获对 ds_allocator.ReleaseBattle 的调用;failErr 非空时返错(模拟 ds_allocator
+// 不可用,验证弱依赖不阻断落库)。
+type fakeDSReleaser struct {
+	calls   []dsReleaseCall
+	failErr error
+}
+
+type dsReleaseCall struct {
+	matchID uint64
+	reason  string
+}
+
+func (d *fakeDSReleaser) ReleaseBattle(_ context.Context, matchID uint64, reason string) error {
+	d.calls = append(d.calls, dsReleaseCall{matchID: matchID, reason: reason})
+	return d.failErr
+}
+
 func newTestUsecase(repo *fakeRepo, pusher PlayerUpdatePusher) *BattleResultUsecase {
 	cfg := conf.BattleConf{EloKFactor: 32, BaseMMR: 1500}
-	return NewBattleResultUsecase(repo, NewStaticMMRReader(cfg.BaseMMR), pusher, nil, cfg)
+	return NewBattleResultUsecase(repo, NewStaticMMRReader(cfg.BaseMMR), pusher, nil, nil, cfg)
 }
 
 // ── Elo ───────────────────────────────────────────────────────────────────────
@@ -272,6 +289,102 @@ func TestReportResultAbandonedForcesZeroDelta(t *testing.T) {
 			t.Fatalf("saved abandoned player %d mmr_delta got %d want 0", s.GetPlayerId(), s.GetMmrDelta())
 		}
 	}
+}
+
+// TestReleaseDSCalledOnNormalSettleOnly 守住战斗 DS 账本回收配线:
+//   - 正常结算落库成功 → 调一次 ds_allocator.ReleaseBattle(reason=completed)
+//   - 幂等命中(重复结算)→ 不重复回收(已落库,不再触发)
+//   - ReportResult 收到 ABANDONED(防伪兜底)→ 不调 releaseDS(pod 归 sweep 管)
+//   - HandleAbandoned(sweep 来的补偿)→ 不调 releaseDS(镜像有意保留供诊断)
+//   - ds_allocator 调用失败 → 弱依赖仅 Warn,结算落库照常成功
+func TestReleaseDSCalledOnNormalSettleOnly(t *testing.T) {
+	mkResult := func(matchID uint64, outcome battlev1.BattleOutcome) *battlev1.BattleResult {
+		return &battlev1.BattleResult{
+			MatchId:    matchID,
+			WinnerTeam: winnerTeamA,
+			Outcome:    outcome,
+			EndedAtMs:  1000,
+			Stats: []*battlev1.PlayerStats{
+				{PlayerId: 1, Team: 0},
+				{PlayerId: 2, Team: 1},
+			},
+		}
+	}
+	newUC := func(repo *fakeRepo, ds DSReleaser) *BattleResultUsecase {
+		cfg := conf.BattleConf{EloKFactor: 32, BaseMMR: 1500}
+		return NewBattleResultUsecase(repo, NewStaticMMRReader(cfg.BaseMMR), &fakePusher{}, nil, ds, cfg)
+	}
+
+	// 1) 正常结算 → 调一次 ReleaseBattle(reason=completed);幂等再报不重复回收
+	t.Run("normal_settle_releases_once", func(t *testing.T) {
+		repo := newFakeRepo()
+		ds := &fakeDSReleaser{}
+		uc := newUC(repo, ds)
+		result := mkResult(500, battlev1.BattleOutcome_BATTLE_OUTCOME_UNSPECIFIED)
+
+		if _, err := uc.ReportResult(context.Background(), result); err != nil {
+			t.Fatalf("ReportResult err: %v", err)
+		}
+		if len(ds.calls) != 1 {
+			t.Fatalf("normal settle: expected 1 ReleaseBattle call, got %d", len(ds.calls))
+		}
+		if ds.calls[0].matchID != 500 || ds.calls[0].reason != "completed" {
+			t.Fatalf("ReleaseBattle call got (%d,%q) want (500,\"completed\")", ds.calls[0].matchID, ds.calls[0].reason)
+		}
+		// 幂等命中(同 match_id 再报)不应再次回收
+		if _, err := uc.ReportResult(context.Background(), mkResult(500, battlev1.BattleOutcome_BATTLE_OUTCOME_UNSPECIFIED)); err != nil {
+			t.Fatalf("second ReportResult err: %v", err)
+		}
+		if len(ds.calls) != 1 {
+			t.Fatalf("idempotent re-report should not re-release, got %d calls", len(ds.calls))
+		}
+	})
+
+	// 2) ReportResult 收到 ABANDONED(防伪兜底)→ 不调 releaseDS
+	t.Run("abandoned_via_report_skips_release", func(t *testing.T) {
+		repo := newFakeRepo()
+		ds := &fakeDSReleaser{}
+		uc := newUC(repo, ds)
+		if _, err := uc.ReportResult(context.Background(), mkResult(501, battlev1.BattleOutcome_BATTLE_OUTCOME_ABANDONED)); err != nil {
+			t.Fatalf("ReportResult abandoned err: %v", err)
+		}
+		if len(ds.calls) != 0 {
+			t.Fatalf("abandoned-via-ReportResult should not release DS, got %d calls", len(ds.calls))
+		}
+	})
+
+	// 3) HandleAbandoned(sweep 补偿)→ 不调 releaseDS(镜像有意保留供诊断)
+	t.Run("handle_abandoned_skips_release", func(t *testing.T) {
+		repo := newFakeRepo()
+		ds := &fakeDSReleaser{}
+		uc := newUC(repo, ds)
+		if err := uc.HandleAbandoned(context.Background(), 502, []uint64{1, 2}, 5, "ranked_5v5", 0); err != nil {
+			t.Fatalf("HandleAbandoned err: %v", err)
+		}
+		if len(ds.calls) != 0 {
+			t.Fatalf("HandleAbandoned should not release DS, got %d calls", len(ds.calls))
+		}
+	})
+
+	// 4) ds_allocator 不可用 → 弱依赖仅 Warn,落库照常成功
+	t.Run("release_failure_does_not_block_persist", func(t *testing.T) {
+		repo := newFakeRepo()
+		ds := &fakeDSReleaser{failErr: simpleErr("ds_allocator down")}
+		uc := newUC(repo, ds)
+		already, err := uc.ReportResult(context.Background(), mkResult(503, battlev1.BattleOutcome_BATTLE_OUTCOME_UNSPECIFIED))
+		if err != nil {
+			t.Fatalf("ReleaseBattle failure must not block persist, got err: %v", err)
+		}
+		if already {
+			t.Fatal("first report should not be alreadyRecorded")
+		}
+		if _, ok, _ := repo.GetResult(context.Background(), 503); !ok {
+			t.Fatal("result must be persisted even when ReleaseBattle fails")
+		}
+		if len(ds.calls) != 1 {
+			t.Fatalf("expected 1 ReleaseBattle attempt, got %d", len(ds.calls))
+		}
+	})
 }
 
 // ── HandleAbandoned ───────────────────────────────────────────────────────────

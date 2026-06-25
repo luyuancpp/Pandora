@@ -7,7 +7,7 @@
 //     ② 结算 match_id(uk,资产只转一次,不变量 §9.2 / §9.7);
 //   - 成交发 kafka pandora.auction.match,订单流转发 pandora.auction.audit(弱依赖)。
 //
-// 单写者实现:进程内 per-market 互斥锁(striped lock)。同一 market 的挂单 / 出价 / �leg单
+// 单写者实现:进程内 per-market 互斥锁(striped lock)。同一 market 的挂单 / 出价 / 撤单
 // 全程持锁串行,订单簿与权威库不会并发改 → 不会超卖。跨实例的「每 market 单写者」需配一致性
 // 哈希路由(每个 market 固定落一个实例),属扩容步骤,后续接入;W1 单实例进程内串行即可。
 //

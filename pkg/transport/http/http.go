@@ -24,10 +24,10 @@ import (
 // MustNewServer 创建并配置一个 Kratos HTTP Server。
 //
 // 默认 middleware 链跟 grpcserver 一致(同一套 Pandora middleware,协议无关):
-//   1. Recovery     最外层捕 panic
-//   2. Trace        trace_id 注入 / 透��
-//   3. Logging      access log
-//   4. Metrics      Prometheus 指标
+//  1. Recovery     最外层捕 panic
+//  2. Trace        trace_id 注入 / 透传
+//  3. Logging      access log
+//  4. Metrics      Prometheus 指标
 //
 // 用法:
 //

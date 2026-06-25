@@ -309,8 +309,20 @@ func (u *HubUsecase) Heartbeat(ctx context.Context, pod string, playerCount int3
 		return nil, err
 	}
 	if !found {
-		plog.With(ctx).Warnw("msg", "heartbeat_orphan_hub", "pod", pod)
-		return &HeartbeatResult{Command: commandStop}, nil
+		// 新建/重建的 Hub GameServer 可能早于周期拓扑刷新发来业务心跳。
+		// 这里先主动刷新一次拓扑,避免首跳把健康 pod 误判成孤儿并下发 stop。
+		if rerr := u.reconcileShardTopology(ctx); rerr != nil {
+			plog.With(ctx).Warnw("msg", "heartbeat_topology_reconcile_failed", "pod", pod, "err", rerr)
+		} else {
+			found, err = u.repo.HeartbeatShard(ctx, pod, playerCount, state, tsMs, u.shardTTL())
+			if err != nil {
+				return nil, err
+			}
+		}
+		if !found {
+			plog.With(ctx).Warnw("msg", "heartbeat_unknown_hub_waiting_topology", "pod", pod)
+			return &HeartbeatResult{Command: commandNone}, nil
+		}
 	}
 	// 分片被标记 draining/stopping → 下发迁移/停机指令(与 Kafka 推送双通道)。
 	if shard, ok, gerr := u.repo.GetShard(ctx, pod); gerr == nil && ok {

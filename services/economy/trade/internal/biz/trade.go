@@ -44,8 +44,9 @@ type ResourceLedger interface {
 	Settle(ctx context.Context, order *tradev1.Order, idempotencyKey uint64) error
 }
 
-// NoopResourceLedger 是占位实现:总是结算成功。
-// 真实资源扣减(背包 / 货币原子事务 + 幂等键)接入前先让交易闭环可联调。
+// NoopResourceLedger 是占位实现:总是结算成功(不真实扣转背包 / 货币)。
+// 仅供联调 / 单测;生产由 main.go 强制 fail-fast(除非显式 allow_noop_ledger=true),
+// 防止漏接真实账本后仍以「成交不扣减」静默上线。真实资源扣减接 inventory P2P 原子对转后替换。
 type NoopResourceLedger struct{}
 
 // Settle 永远成功(占位)。

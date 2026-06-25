@@ -20,6 +20,10 @@
 package svc
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	klog "github.com/go-kratos/kratos/v2/log"
 	"github.com/redis/go-redis/v9"
 
@@ -55,9 +59,27 @@ type BaseContext struct {
 // MustNewBaseContext 用 config.Base 构造 BaseContext。失败 panic。
 //
 // 调用前必须已经 log.Setup() 过(初始化 logx)。
+//
+// Redis 为全服强依赖:Node.RedisClient 的 host 与 addrs 同时为空视为漏配,直接 panic;
+// 构造后做一次带超时的 Ping,连不上立即 panic,避免服务带着死 Redis 启动、首条命令才暴露。
 func MustNewBaseContext(c config.Base) *BaseContext {
+	// 0. 校验 Redis endpoint 已配置(单实例填 host,Sentinel / Cluster 填 addrs)。
+	rc := c.Node.RedisClient
+	if rc.Host == "" && len(rc.Addrs) == 0 {
+		panic("svc.MustNewBaseContext: redis endpoint required, set node.redis_client.host (single) or node.redis_client.addrs (sentinel/cluster)")
+	}
+
 	// 1. Redis client(UniversalClient:单实例 / Sentinel / Cluster 由配置驱动)
-	rdb := redisx.NewUniversalClient(c.Node.RedisClient)
+	rdb := redisx.NewUniversalClient(rc)
+
+	// 1.1 Ping 探活:强依赖不可降级,连不上立即 panic(对齐各服务 main.go 启动校验)。
+	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		cancel()
+		_ = rdb.Close()
+		panic(fmt.Sprintf("svc.MustNewBaseContext: redis ping failed host=%s addrs=%v: %v", rc.Host, rc.Addrs, err))
+	}
+	cancel()
 
 	// 2. Snowflake
 	sf := snowflake.NewNode(uint64(c.Node.ZoneId))
@@ -68,7 +90,7 @@ func MustNewBaseContext(c config.Base) *BaseContext {
 	// 4. Kill-Switch(RPC 级临时关停)。fail-open:配置缺失 / 源建不起来都不阻断启动。
 	ks := mustSetupKillSwitch(c.KillSwitch)
 
-	klog.Infof("[svc] BaseContext ready zone=%d redis=%s", c.Node.ZoneId, c.Node.RedisClient.Host)
+	klog.Infof("[svc] BaseContext ready zone=%d redis=%s", c.Node.ZoneId, rc.Host)
 
 	return &BaseContext{
 		RedisClient: rdb,
