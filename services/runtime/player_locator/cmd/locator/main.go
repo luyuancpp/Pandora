@@ -23,6 +23,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	"github.com/luyuancpp/pandora/pkg/killswitch"
 	plog "github.com/luyuancpp/pandora/pkg/log"
@@ -131,6 +132,12 @@ func main() {
 		presence = presenceHub
 	}
 	uc := biz.NewLocatorUsecase(repo, cfg.Locator.LocationTTL.Std(), presence)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewLocatorService(uc)
 
 	// 5. gRPC + HTTP

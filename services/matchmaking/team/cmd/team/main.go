@@ -22,6 +22,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 
 	"github.com/luyuancpp/pandora/pkg/kafkax"
@@ -113,6 +114,12 @@ func main() {
 	// 6. 装配链
 	repo := data.NewRedisTeamRepo(rdb)
 	uc := biz.NewTeamUsecase(repo, pusher, cfg.Team)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewTeamService(uc, sf)
 
 	// 7. gRPC + HTTP

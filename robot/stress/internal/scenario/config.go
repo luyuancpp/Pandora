@@ -69,6 +69,13 @@ type Config struct {
 	// DSMode: "stub"(默认,只压后端) / "real"(接真 DS,阶段 1 不用)。
 	DSMode string `json:"ds_mode"`
 
+	// AutoConfirmMatch 必须与 matchmaker 的 auto_confirm_match 保持一致。
+	// true:服务端撮合后自动确认并直接拉 DS,VU 不再发 ConfirmMatch,只轮询到 READY/ALLOCATING
+	// 即视为成局。原因:auto_confirm 下确认期 ~1s 内 match 仍持久化为 CONFIRM(onAllConfirmed 在
+	// AllocateBattle 返回后才写 READY),VU 抢发 ConfirmMatch 会与「自动确认→拉DS→上报→释放」流水线
+	// 竞态、撞上已推进/已删除的 match 而报错。需与服务端配置一致,否则手动/自动确认口径错位。
+	AutoConfirmMatch bool `json:"auto_confirm_match"`
+
 	// AccountPrefix 账号前缀,VU 账号 = <prefix><index>,首次登录自动注册。
 	AccountPrefix string `json:"account_prefix"`
 
@@ -108,6 +115,7 @@ func Default() Config {
 		SteadySeconds:    1800,
 		MachineID:        "robot-0",
 		DSMode:           "stub",
+		AutoConfirmMatch: true,
 		AccountPrefix:    "stressbot_",
 		EnvoySampleRatio: 0.01,
 		ActionIntervalMs: 5000,

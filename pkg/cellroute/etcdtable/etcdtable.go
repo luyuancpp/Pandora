@@ -225,3 +225,41 @@ func parseKVs(kvs []*mvccpb.KeyValue, prefix string) (map[uint32]string, error) 
 	}
 	return raw, nil
 }
+
+// BuildRouter 是 18 服务 main 统一装配口:按 cfg.Mode 返回 (router, closer, err)。
+//
+//   - off(空):返回 (nil, nil, nil) —— 单 Cell,所有服务 nil-safe 回退,行为不变。
+//   - static:本地铺表(不连 etcd),closer 为 nil。
+//   - etcd:连 etcd 全量 Get + watch 热更新,closer 是 Watcher.Close(main defer 调用)。
+//
+// 这样 main 只写一句 router, closer, err := etcdtable.BuildRouter(ctx, cfg.CellRoute),
+// 不在每个服务里重复 off/static/etcd 分流。
+func BuildRouter(ctx context.Context, cfg cellroute.RouterConfig) (*cellroute.Router, func() error, error) {
+	if cfg.Mode != cellroute.ModeEtcd {
+		r, err := cellroute.BuildRouter(cfg) // off→nil,static→本地铺表
+		return r, nil, err
+	}
+	w, err := Start(ctx, Config{Endpoints: cfg.EtcdEndpoints, Prefix: cfg.EtcdPrefix})
+	if err != nil {
+		return nil, nil, err
+	}
+	r, err := cellroute.NewRouter(w.Table())
+	if err != nil {
+		_ = w.Close()
+		return nil, nil, err
+	}
+	return r, w.Close, nil
+}
+
+// WireRouter 构造 router 并经 set 注入业务 usecase,返回 closer(etcd 模式非 nil,main defer)。
+// off 模式 set 不被调用(router=nil),单 Cell 行为不变。给 18 服务 main 一行接线。
+func WireRouter(ctx context.Context, cfg cellroute.RouterConfig, set func(*cellroute.Router)) (func() error, error) {
+	r, closer, err := BuildRouter(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if r != nil && set != nil {
+		set(r)
+	}
+	return closer, nil
+}

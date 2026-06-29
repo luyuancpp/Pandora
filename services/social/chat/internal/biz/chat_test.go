@@ -68,6 +68,32 @@ func (f *fakePusher) PushWorld(_ context.Context, evt *chatv1.ChatPushEvent) err
 	f.pushes = append(f.pushes, pushRecord{"world", 0, evt})
 	return nil
 }
+func (f *fakePusher) PushGuild(_ context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error {
+	f.pushes = append(f.pushes, pushRecord{"guild", toPlayerID, evt})
+	return nil
+}
+func (f *fakePusher) PushGroup(_ context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error {
+	f.pushes = append(f.pushes, pushRecord{"group", toPlayerID, evt})
+	return nil
+}
+
+type fakeGuild struct {
+	members map[uint64][]uint64
+}
+
+func (f *fakeGuild) GetGuildMembers(_ context.Context, guildID uint64) ([]uint64, bool, error) {
+	m, ok := f.members[guildID]
+	return m, ok, nil
+}
+
+type fakeGroup struct {
+	members map[uint64][]uint64
+}
+
+func (f *fakeGroup) GetGroupMembers(_ context.Context, groupID uint64) ([]uint64, bool, error) {
+	m, ok := f.members[groupID]
+	return m, ok, nil
+}
 
 type fakeTeam struct {
 	members map[uint64][]uint64
@@ -89,7 +115,7 @@ func newUC(repo *fakeRepo, pusher *fakePusher, team *fakeTeam) *ChatUsecase {
 	if team != nil {
 		t = team
 	}
-	return NewChatUsecase(repo, p, t, conf.ChatConf{MaxContentLen: 10, HistoryLimit: 50})
+	return NewChatUsecase(repo, p, t, nil, nil, conf.ChatConf{MaxContentLen: 10, HistoryLimit: 50})
 }
 
 func wantCode(t *testing.T, err error, code errcode.Code) {
@@ -218,9 +244,119 @@ func TestSendTeam_DegradedNoDeps(t *testing.T) {
 	}
 }
 
+// ── 公会 / 群频道 fan-out(2026-06-27 群聊上线)────────────────────────────────
+
+// newGuildUC 构造带 guild / group reader 的 ChatUsecase(队伍 reader 留空)。
+func newGuildUC(pusher *fakePusher, guild *fakeGuild, group *fakeGroup) *ChatUsecase {
+	var p ChatPusher
+	if pusher != nil {
+		p = pusher
+	}
+	var g GuildReader
+	if guild != nil {
+		g = guild
+	}
+	var gp GroupReader
+	if group != nil {
+		gp = group
+	}
+	return NewChatUsecase(&fakeRepo{}, p, nil, g, gp, conf.ChatConf{MaxContentLen: 10, HistoryLimit: 50})
+}
+
+func TestSendGuild_OK(t *testing.T) {
+	pusher := &fakePusher{}
+	guild := &fakeGuild{members: map[uint64][]uint64{55: {1, 2, 3}}}
+	uc := newGuildUC(pusher, guild, nil)
+
+	id, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GUILD, 55, "hi", 100)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if id != 100 {
+		t.Fatalf("want 100, got %d", id)
+	}
+	// 原则 2:排除发送者 1,发给 2 / 3。
+	if len(pusher.pushes) != 2 {
+		t.Fatalf("want 2 guild pushes, got %d (%+v)", len(pusher.pushes), pusher.pushes)
+	}
+	for _, p := range pusher.pushes {
+		if p.kind != "guild" {
+			t.Fatalf("want guild kind, got %s", p.kind)
+		}
+		if p.toPlayerID == 1 {
+			t.Fatalf("must not push back to sender")
+		}
+	}
+}
+
+func TestSendGuild_NotMember(t *testing.T) {
+	guild := &fakeGuild{members: map[uint64][]uint64{55: {2, 3}}}
+	uc := newGuildUC(&fakePusher{}, guild, nil)
+	_, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GUILD, 55, "hi", 100)
+	wantCode(t, err, errcode.ErrChatChannelInvalid)
+}
+
+func TestSendGuild_GuildNotFound(t *testing.T) {
+	guild := &fakeGuild{members: map[uint64][]uint64{}}
+	uc := newGuildUC(&fakePusher{}, guild, nil)
+	_, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GUILD, 55, "hi", 100)
+	wantCode(t, err, errcode.ErrChatChannelInvalid)
+}
+
+func TestSendGuild_DegradedNoDeps(t *testing.T) {
+	// guild / pusher 均 nil:不报错,返回 message_id(客户端本地回显)。
+	uc := newGuildUC(nil, nil, nil)
+	id, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GUILD, 55, "hi", 100)
+	if err != nil {
+		t.Fatalf("degraded guild chat should not error, got %v", err)
+	}
+	if id != 100 {
+		t.Fatalf("want 100, got %d", id)
+	}
+}
+
+func TestSendGroup_OK(t *testing.T) {
+	pusher := &fakePusher{}
+	group := &fakeGroup{members: map[uint64][]uint64{88: {1, 2}}}
+	uc := newGuildUC(pusher, nil, group)
+
+	id, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GROUP, 88, "yo", 100)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if id != 100 {
+		t.Fatalf("want 100, got %d", id)
+	}
+	// 原则 2:排除发送者 1,只发给 2。
+	if len(pusher.pushes) != 1 {
+		t.Fatalf("want 1 group push, got %d (%+v)", len(pusher.pushes), pusher.pushes)
+	}
+	if pusher.pushes[0].kind != "group" || pusher.pushes[0].toPlayerID != 2 {
+		t.Fatalf("want group push to 2, got %+v", pusher.pushes[0])
+	}
+}
+
+func TestSendGroup_NotMember(t *testing.T) {
+	group := &fakeGroup{members: map[uint64][]uint64{88: {2, 3}}}
+	uc := newGuildUC(&fakePusher{}, nil, group)
+	_, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GROUP, 88, "hi", 100)
+	wantCode(t, err, errcode.ErrChatChannelInvalid)
+}
+
+func TestSendGroup_DegradedNoDeps(t *testing.T) {
+	uc := newGuildUC(nil, nil, nil)
+	id, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_GROUP, 88, "hi", 100)
+	if err != nil {
+		t.Fatalf("degraded group chat should not error, got %v", err)
+	}
+	if id != 100 {
+		t.Fatalf("want 100, got %d", id)
+	}
+}
+
 func TestMaskSensitive(t *testing.T) {
 	repo := &fakeRepo{}
-	uc := NewChatUsecase(repo, nil, nil, conf.ChatConf{MaxContentLen: 256, HistoryLimit: 50, SensitiveWords: []string{"bad"}})
+	uc := NewChatUsecase(repo, nil, nil, nil, nil, conf.ChatConf{MaxContentLen: 256, HistoryLimit: 50, SensitiveWords: []string{"bad"}})
 	_, err := uc.SendMessage(context.Background(), 1, chatv1.ChatChannel_CHAT_CHANNEL_PRIVATE, 2, "a bad word", 100)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)

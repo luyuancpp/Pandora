@@ -167,6 +167,60 @@ func (f *fakeRepo) SettleAuctionMatch(_ context.Context, _, sellerID, buyerID, s
 	return false, nil
 }
 
+func (f *fakeRepo) SettlePlayerTrade(_ context.Context, _, sellerID, buyerID uint64, sellerItems, buyerItems []data.ItemGrant, price int64, idempotencyKey, _ string) (bool, error) {
+	fp := data.PlayerTradeSettleFingerprint(sellerID, buyerID, sellerItems, buyerItems, price)
+	sk := keyOf(sellerID, idempotencyKey)
+	bk := keyOf(buyerID, idempotencyKey)
+	if e, ok := f.ledger[sk]; ok {
+		if e.fingerprint != fp {
+			return false, errcode.New(errcode.ErrInventoryIdempotencyConflict, "idempotency conflict")
+		}
+		return true, nil
+	}
+	if e, ok := f.ledger[bk]; ok {
+		if e.fingerprint != fp {
+			return false, errcode.New(errcode.ErrInventoryIdempotencyConflict, "idempotency conflict")
+		}
+		return true, nil
+	}
+	// 校验双方活跃余额足够(无 escrow,直接从活跃背包 / 金币扣转)。
+	for _, it := range sellerItems {
+		if f.items[sellerID][it.ItemConfigID] < it.Count {
+			return false, errcode.New(errcode.ErrInventoryInsufficient, "seller item insufficient")
+		}
+	}
+	for _, it := range buyerItems {
+		if f.items[buyerID][it.ItemConfigID] < it.Count {
+			return false, errcode.New(errcode.ErrInventoryInsufficient, "buyer item insufficient")
+		}
+	}
+	if price > 0 && f.gold[buyerID] < price {
+		return false, errcode.New(errcode.ErrInventoryInsufficient, "buyer gold insufficient")
+	}
+	if f.items[sellerID] == nil {
+		f.items[sellerID] = map[uint32]int64{}
+	}
+	if f.items[buyerID] == nil {
+		f.items[buyerID] = map[uint32]int64{}
+	}
+	// 卖家交付 sellerItems → 买家;买家交付 buyerItems → 卖家;买家付 price 金币 → 卖家。
+	for _, it := range sellerItems {
+		f.items[sellerID][it.ItemConfigID] -= it.Count
+		f.items[buyerID][it.ItemConfigID] += it.Count
+	}
+	for _, it := range buyerItems {
+		f.items[buyerID][it.ItemConfigID] -= it.Count
+		f.items[sellerID][it.ItemConfigID] += it.Count
+	}
+	if price > 0 {
+		f.gold[buyerID] -= price
+		f.gold[sellerID] += price
+	}
+	f.ledger[sk] = ledgerEntry{fingerprint: fp}
+	f.ledger[bk] = ledgerEntry{fingerprint: fp}
+	return false, nil
+}
+
 func (f *fakeRepo) FreezeForOrder(_ context.Context, playerID, orderID uint64, kind data.EscrowKind, itemConfigID uint32, quantity, frozenGold int64) (bool, error) {
 	ek := escrowKeyOf(playerID, orderID)
 	if _, ok := f.escrow[ek]; ok {
@@ -446,6 +500,80 @@ func TestSettleAuctionMatch_Idempotent(t *testing.T) {
 	if repo.items[20][7001] != 3 || repo.gold[10] != 300 || repo.gold[20] != 700 {
 		t.Fatalf("idempotent settle must not double-transfer: buyerItem=%d sellerGold=%d buyerGold=%d",
 			repo.items[20][7001], repo.gold[10], repo.gold[20])
+	}
+}
+
+func TestSettlePlayerTrade_OK(t *testing.T) {
+	repo := newFakeRepo()
+	uc := newUC(repo)
+	ctx := context.Background()
+	// 卖家 10 持有 5 个 7001;买家 20 持有 1000 金币 + 2 个 8002(回付道具)。
+	if _, err := uc.GrantItems(ctx, 10, []data.ItemGrant{{ItemConfigID: 7001, Count: 5}}, 0, "seed-seller"); err != nil {
+		t.Fatalf("seed seller err: %v", err)
+	}
+	if _, err := uc.GrantItems(ctx, 20, []data.ItemGrant{{ItemConfigID: 8002, Count: 2}}, 1000, "seed-buyer"); err != nil {
+		t.Fatalf("seed buyer err: %v", err)
+	}
+	// 交易:卖家给 3 个 7001;买家给 2 个 8002 + 300 金币。
+	err := uc.SettlePlayerTrade(ctx, 12345, 10, 20,
+		[]data.ItemGrant{{ItemConfigID: 7001, Count: 3}},
+		[]data.ItemGrant{{ItemConfigID: 8002, Count: 2}}, 300)
+	if err != nil {
+		t.Fatalf("settle err: %v", err)
+	}
+	if repo.items[10][7001] != 2 || repo.items[20][7001] != 3 {
+		t.Fatalf("item 7001 transfer wrong: seller=%d buyer=%d", repo.items[10][7001], repo.items[20][7001])
+	}
+	if repo.items[20][8002] != 0 || repo.items[10][8002] != 2 {
+		t.Fatalf("item 8002 transfer wrong: buyer=%d seller=%d", repo.items[20][8002], repo.items[10][8002])
+	}
+	if repo.gold[10] != 300 || repo.gold[20] != 700 {
+		t.Fatalf("gold transfer wrong: seller=%d buyer=%d", repo.gold[10], repo.gold[20])
+	}
+}
+
+func TestSettlePlayerTrade_Insufficient(t *testing.T) {
+	repo := newFakeRepo()
+	uc := newUC(repo)
+	ctx := context.Background()
+	// 卖家只有 1 个,交易要给 3 个 → 不足。
+	if _, err := uc.GrantItems(ctx, 10, []data.ItemGrant{{ItemConfigID: 7001, Count: 1}}, 0, "seed-seller"); err != nil {
+		t.Fatalf("seed seller err: %v", err)
+	}
+	if _, err := uc.GrantItems(ctx, 20, nil, 1000, "seed-buyer"); err != nil {
+		t.Fatalf("seed buyer err: %v", err)
+	}
+	err := uc.SettlePlayerTrade(ctx, 12345, 10, 20,
+		[]data.ItemGrant{{ItemConfigID: 7001, Count: 3}}, nil, 300)
+	if errcode.As(err) != errcode.ErrInventoryInsufficient {
+		t.Fatalf("want ErrInventoryInsufficient, got %v", err)
+	}
+}
+
+func TestSettlePlayerTrade_Idempotent(t *testing.T) {
+	repo := newFakeRepo()
+	uc := newUC(repo)
+	ctx := context.Background()
+	if _, err := uc.GrantItems(ctx, 10, []data.ItemGrant{{ItemConfigID: 7001, Count: 5}}, 0, "seed-seller"); err != nil {
+		t.Fatalf("seed seller err: %v", err)
+	}
+	if _, err := uc.GrantItems(ctx, 20, nil, 1000, "seed-buyer"); err != nil {
+		t.Fatalf("seed buyer err: %v", err)
+	}
+	settle := func() error {
+		return uc.SettlePlayerTrade(ctx, 12345, 10, 20,
+			[]data.ItemGrant{{ItemConfigID: 7001, Count: 3}}, nil, 300)
+	}
+	if err := settle(); err != nil {
+		t.Fatalf("first settle err: %v", err)
+	}
+	if err := settle(); err != nil {
+		t.Fatalf("idempotent settle err: %v", err)
+	}
+	// 重复结算同一 order_id:资产不可二次转移。
+	if repo.items[10][7001] != 2 || repo.items[20][7001] != 3 || repo.gold[10] != 300 || repo.gold[20] != 700 {
+		t.Fatalf("idempotent settle must not double-transfer: sellerItem=%d buyerItem=%d sellerGold=%d buyerGold=%d",
+			repo.items[10][7001], repo.items[20][7001], repo.gold[10], repo.gold[20])
 	}
 }
 

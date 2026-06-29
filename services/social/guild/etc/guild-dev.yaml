@@ -1,0 +1,40 @@
+# Pandora guild 服务开发期配置(2026-06-27)。
+#
+# - gRPC :50008 / HTTP :51008(仅 /metrics)
+# - 公会(GuildService)+ 临时群(GroupService)同进程
+# - MySQL 强依赖(pandora_social 库:guilds + guild_members + guild_join_requests + chat_groups + chat_group_members)
+# - Kafka 弱依赖(生产 pandora.guild.event → push 推送公会成员变更通知)
+# - dev: enable_reflection=true 便于 grpcurl 联调
+
+server:
+  grpc:
+    network: tcp
+    addr: ":50008"
+    timeout: "15s"              # demo:弱网/本机抖动下 unary RPC 放宽;prod 再按接口收紧
+    enable_reflection: true     # dev 开;prod 关(零值=false)
+  http:
+    network: tcp
+    addr: ":51008"
+
+node:
+  zone_id: 1
+  # MySQL:dev 连本机 docker mysql 的 pandora_social 库(强依赖,DSN 必填)。
+  mysql_client:
+    dsn: "pandora:pandora_dev_pwd@tcp(127.0.0.1:3307)/pandora_social?parseTime=true&loc=UTC&charset=utf8mb4&collation=utf8mb4_0900_ai_ci"
+    max_open_conns: 32
+    max_idle_conns: 8
+    conn_max_lifetime: "30m"
+    ping_timeout: "3s"
+
+kafka:
+  brokers: ["127.0.0.1:9093"]
+  group_id: "pandora-guild"
+  partition_cnt: 4
+
+guild:
+  # max_guild_members: 单公会成员上限(默认 100)
+  max_guild_members: 100
+  # max_group_members: 单临时群成员上限(默认 50)
+  max_group_members: 50
+  # max_name_len: 公会 / 群名最大长度(utf8 rune,默认 24)
+  max_name_len: 24

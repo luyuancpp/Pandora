@@ -8,6 +8,8 @@
 //     pandora.chat.world    世界频道(key=hub_pod / 全局)
 //     pandora.chat.team     队伍频道(key=team_id)
 //     pandora.chat.private  私聊(key=target_player_id)
+//     pandora.chat.guild    公会频道(key=接收方 player_id)
+//     pandora.chat.group    临时群频道(key=接收方 player_id)
 //   本 service **只提供发送 RPC**,接收靠 kafka 推送链路。
 
 syntax = "proto3";
@@ -24,9 +26,11 @@ service ChatService {
 enum ChatChannel {
   CHAT_CHANNEL_UNSPECIFIED = 0;
   CHAT_CHANNEL_WORLD       = 1;
-  CHAT_CHANNEL_TEAM        = 2;
-  CHAT_CHANNEL_PRIVATE     = 3;
-  CHAT_CHANNEL_SYSTEM      = 4;
+  CHAT_CHANNEL_TEAM        = 2;  // 组队队伍(target_id = team_id)
+  CHAT_CHANNEL_PRIVATE     = 3;  // 私聊(target_id = 对方 player_id,落库支持离线历史)
+  CHAT_CHANNEL_SYSTEM      = 4;  // 服务端→客户端,客户端不能发
+  CHAT_CHANNEL_GUILD       = 5;  // 公会频道(target_id = guild_id;即时,不落库)
+  CHAT_CHANNEL_GROUP       = 6;  // 临时群频道(target_id = group_id;即时,不落库)
 }
 
 message ChatMessage {

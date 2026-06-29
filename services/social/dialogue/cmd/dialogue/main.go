@@ -31,6 +31,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	klog "github.com/go-kratos/kratos/v2/log"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/snowflake"
 
@@ -97,6 +98,12 @@ func main() {
 
 	// 6. 装配链
 	uc := biz.NewDialogueUsecase(treeProvider, sessions, cfg.Dialogue.SessionTTL.Std())
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewDialogueService(uc, sf)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

@@ -1,6 +1,6 @@
 # Pandora 全业务服务容器编排(docker 模式)
 #
-# 这是「整套后端跑在容器里」的编排:17 个 go 服务各一个容器,全部接到基础设施所在的
+# 这是「整套后端跑在容器里」的编排：18 个 go 服务各一个容器，全部接到基础设施所在的
 # 外部网络 pandora-net(由 deploy/docker-compose.dev.yml 创建)。
 #
 # 用法(推荐用一键脚本,自动先拉基础设施再起服务):
@@ -75,6 +75,16 @@ services:
     container_name: pandora-chat
     volumes: [ "../run/cluster/etc/chat.yaml:/app/etc/cluster.yaml:ro" ]
     ports: [ "50005:50005" ]
+
+  guild:
+    <<: *svc-base
+    build:
+      <<: *build-base
+      args: { SERVICE_DIR: services/social/guild, CMD_NAME: guild }
+    image: pandora/guild:dev
+    container_name: pandora-guild
+    volumes: [ "../run/cluster/etc/guild.yaml:/app/etc/cluster.yaml:ro" ]
+    ports: [ "50008:50008" ]
 
   player-locator:
     <<: *svc-base

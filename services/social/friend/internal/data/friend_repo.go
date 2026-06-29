@@ -15,6 +15,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math/rand"
+	"strings"
 
 	"github.com/luyuancpp/pandora/pkg/errcode"
 )
@@ -51,6 +53,13 @@ type IncomingRequestRow struct {
 type BlockRow struct {
 	BlockedID uint64
 	SinceMs   int64
+}
+
+// RecommendRow 是一条推荐好友候选(供 biz 组装 RecommendedFriendInfo)。
+// Mutual 是与查询者的共同好友数(FOF 候选 >0;随机兜底候选为 0)。
+type RecommendRow struct {
+	CandidateID uint64
+	Mutual      int
 }
 
 // FriendRepo 是 friend 数据层抽象。biz 层只依赖此接口,不依赖 *sql.DB。
@@ -96,6 +105,12 @@ type FriendRepo interface {
 	Unblock(ctx context.Context, playerID, targetID uint64) error
 	// ListBlocks 列出玩家拉黑的人(blocked_id + since_ms)。
 	ListBlocks(ctx context.Context, playerID uint64) ([]BlockRow, error)
+	// RecommendByMutual 返回「好友的好友」候选,按共同好友数降序、同数随机,取 limit 个。
+	// 已排除:自己 / 已是好友 / 任一方向拉黑 / 双方任一方向 pending 请求 / exclude 列表。
+	RecommendByMutual(ctx context.Context, playerID uint64, exclude []uint64, limit int) ([]RecommendRow, error)
+	// RecommendRandom 从好友图里的玩家随机兜底(FOF 不足 limit 时补足),Mutual 恒为 0。
+	// 排除条件同上。
+	RecommendRandom(ctx context.Context, playerID uint64, exclude []uint64, limit int) ([]RecommendRow, error)
 }
 
 // MySQLFriendRepo 是基于 database/sql 的 FriendRepo 实现。
@@ -447,6 +462,121 @@ FROM blocks WHERE player_id = ? ORDER BY created_at DESC`
 	}
 	if rerr := rows.Err(); rerr != nil {
 		return nil, errcode.New(errcode.ErrInternal, "iterate blocks player=%d: %v", playerID, rerr)
+	}
+	return out, nil
+}
+
+// excludeClause 把 exclude 列表拼成 ` AND <col> NOT IN (?,?,...)`,并返回对应参数。
+// exclude 为空时返回空字符串 + nil,调用方原样拼到 SQL 即可。
+func excludeClause(col string, exclude []uint64) (string, []any) {
+	if len(exclude) == 0 {
+		return "", nil
+	}
+	ph := strings.TrimSuffix(strings.Repeat("?,", len(exclude)), ",")
+	args := make([]any, 0, len(exclude))
+	for _, id := range exclude {
+		args = append(args, id)
+	}
+	return " AND " + col + " NOT IN (" + ph + ")", args
+}
+
+func (r *MySQLFriendRepo) RecommendByMutual(ctx context.Context, playerID uint64, exclude []uint64, limit int) ([]RecommendRow, error) {
+	// 好友的好友(FOF):f1 是我的好友,f2.friend_id 是我好友的好友。
+	// 排除:我自己 / 已是我好友 / 双向拉黑 / 双向 pending 请求 / exclude 列表。
+	// 按共同好友数降序、同数随机,取 limit 个。
+	exCl, exArgs := excludeClause("f2.friend_id", exclude)
+	q := `SELECT f2.friend_id, COUNT(*) AS mutual
+FROM friendships f1
+JOIN friendships f2 ON f1.friend_id = f2.player_id
+WHERE f1.player_id = ?
+  AND f2.friend_id <> ?
+  AND f2.friend_id NOT IN (SELECT friend_id FROM friendships WHERE player_id = ?)
+  AND NOT EXISTS (SELECT 1 FROM blocks b
+        WHERE (b.player_id = ? AND b.blocked_id = f2.friend_id)
+           OR (b.player_id = f2.friend_id AND b.blocked_id = ?))
+  AND NOT EXISTS (SELECT 1 FROM friend_requests r
+        WHERE r.status = 1
+          AND ((r.requester_id = ? AND r.target_id = f2.friend_id)
+            OR (r.requester_id = f2.friend_id AND r.target_id = ?)))` + exCl + `
+GROUP BY f2.friend_id
+ORDER BY mutual DESC, RAND()
+LIMIT ?`
+	args := []any{playerID, playerID, playerID, playerID, playerID, playerID, playerID}
+	args = append(args, exArgs...)
+	args = append(args, limit)
+	return r.scanRecommend(ctx, "fof", playerID, q, args)
+}
+
+func (r *MySQLFriendRepo) RecommendRandom(ctx context.Context, playerID uint64, exclude []uint64, limit int) ([]RecommendRow, error) {
+	// 兜底:FOF 不足时补满。不用 ORDER BY RAND()(会全表排序),改随机锚点 + idx_player 区间扫:
+	// 取随机 pivot,沿 player_id 索引正向扫 limit 个;近表尾不足则从头(>0)再补,各自只走索引区间。
+	pivot := uint64(rand.Int63())
+	rows, err := r.recommendAnchor(ctx, playerID, exclude, pivot, limit)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) < limit {
+		ex := append(append([]uint64{}, exclude...), candidateIDs(rows)...)
+		extra, eerr := r.recommendAnchor(ctx, playerID, ex, 0, limit-len(rows))
+		if eerr != nil {
+			return nil, eerr
+		}
+		rows = append(rows, extra...)
+	}
+	return rows, nil
+}
+
+// recommendAnchor 沿 player_id 索引从 pivot 正向扫 limit 个候选(走 idx_player 区间,无全表排序)。
+// 排除:自己 / 已是好友 / 双向拉黑 / 双向 pending / exclude;mutual 恒 0。
+func (r *MySQLFriendRepo) recommendAnchor(ctx context.Context, playerID uint64, exclude []uint64, pivot uint64, limit int) ([]RecommendRow, error) {
+	exCl, exArgs := excludeClause("player_id", exclude)
+	q := `SELECT player_id, 0 AS mutual
+FROM friendships
+WHERE player_id >= ?
+  AND player_id <> ?
+  AND player_id NOT IN (SELECT friend_id FROM friendships WHERE player_id = ?)
+  AND NOT EXISTS (SELECT 1 FROM blocks b
+        WHERE (b.player_id = ? AND b.blocked_id = friendships.player_id)
+           OR (b.player_id = friendships.player_id AND b.blocked_id = ?))
+  AND NOT EXISTS (SELECT 1 FROM friend_requests r
+        WHERE r.status = 1
+          AND ((r.requester_id = ? AND r.target_id = friendships.player_id)
+            OR (r.requester_id = friendships.player_id AND r.target_id = ?)))` + exCl + `
+GROUP BY player_id
+ORDER BY player_id
+LIMIT ?`
+	args := []any{pivot, playerID, playerID, playerID, playerID, playerID, playerID}
+	args = append(args, exArgs...)
+	args = append(args, limit)
+	return r.scanRecommend(ctx, "random", playerID, q, args)
+}
+
+// candidateIDs 抽出候选 ID,供兜底第二趟去重。
+func candidateIDs(rows []RecommendRow) []uint64 {
+	out := make([]uint64, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.CandidateID)
+	}
+	return out
+}
+
+func (r *MySQLFriendRepo) scanRecommend(ctx context.Context, kind string, playerID uint64, q string, args []any) ([]RecommendRow, error) {
+	rows, err := r.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, errcode.New(errcode.ErrInternal, "recommend %s player=%d: %v", kind, playerID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []RecommendRow
+	for rows.Next() {
+		var rr RecommendRow
+		if serr := rows.Scan(&rr.CandidateID, &rr.Mutual); serr != nil {
+			return nil, errcode.New(errcode.ErrInternal, "scan recommend %s player=%d: %v", kind, playerID, serr)
+		}
+		out = append(out, rr)
+	}
+	if rerr := rows.Err(); rerr != nil {
+		return nil, errcode.New(errcode.ErrInternal, "iterate recommend %s player=%d: %v", kind, playerID, rerr)
 	}
 	return out, nil
 }

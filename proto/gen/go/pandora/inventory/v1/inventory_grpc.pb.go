@@ -39,6 +39,7 @@ const (
 	InventoryService_SellItem_FullMethodName           = "/pandora.inventory.v1.InventoryService/SellItem"
 	InventoryService_FreezeForOrder_FullMethodName     = "/pandora.inventory.v1.InventoryService/FreezeForOrder"
 	InventoryService_SettleAuctionMatch_FullMethodName = "/pandora.inventory.v1.InventoryService/SettleAuctionMatch"
+	InventoryService_SettlePlayerTrade_FullMethodName  = "/pandora.inventory.v1.InventoryService/SettlePlayerTrade"
 	InventoryService_ReleaseEscrow_FullMethodName      = "/pandora.inventory.v1.InventoryService/ReleaseEscrow"
 )
 
@@ -73,6 +74,16 @@ type InventoryServiceClient interface {
 	// 幂等键 = match_id(雪花),同一成交重复结算只生效一次(不变量 §9.2 / §9.7)。
 	// 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
 	SettleAuctionMatch(ctx context.Context, in *SettleAuctionMatchRequest, opts ...grpc.CallOption) (*SettleAuctionMatchResponse, error)
+	// SettlePlayerTrade 原子结算一笔玩家间点对点交易(系统接口,仅后端内部直连):
+	//
+	//	与拍卖不同,P2P 交易无 escrow 预冻,直接从双方活跃背包 / 余额在同一 MySQL 本地事务里对转 ——
+	//	  卖家:手 seller_items 给买家,收 buyer_items + price 金币;
+	//	  买家:手 buyer_items + price 金币给卖家,收 seller_items。
+	//	任一方道具 / 金币不足 → ERR_INVENTORY_INSUFFICIENT,整笔回滚。
+	//
+	// 幂等键 = order_id(雪花),同一订单重复结算只生效一次(不变量 §9.7)。
+	// 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
+	SettlePlayerTrade(ctx context.Context, in *SettlePlayerTradeRequest, opts ...grpc.CallOption) (*SettlePlayerTradeResponse, error)
 	// ReleaseEscrow 拍卖挂单托管退还(系统接口,仅后端内部直连):
 	//
 	//	撤单 / 过期 / 完全成交后把某挂单 escrow 的残余资产退回玩家活跃余额并关闭托管。
@@ -151,6 +162,16 @@ func (c *inventoryServiceClient) SettleAuctionMatch(ctx context.Context, in *Set
 	return out, nil
 }
 
+func (c *inventoryServiceClient) SettlePlayerTrade(ctx context.Context, in *SettlePlayerTradeRequest, opts ...grpc.CallOption) (*SettlePlayerTradeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SettlePlayerTradeResponse)
+	err := c.cc.Invoke(ctx, InventoryService_SettlePlayerTrade_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inventoryServiceClient) ReleaseEscrow(ctx context.Context, in *ReleaseEscrowRequest, opts ...grpc.CallOption) (*ReleaseEscrowResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReleaseEscrowResponse)
@@ -192,6 +213,16 @@ type InventoryServiceServer interface {
 	// 幂等键 = match_id(雪花),同一成交重复结算只生效一次(不变量 §9.2 / §9.7)。
 	// 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
 	SettleAuctionMatch(context.Context, *SettleAuctionMatchRequest) (*SettleAuctionMatchResponse, error)
+	// SettlePlayerTrade 原子结算一笔玩家间点对点交易(系统接口,仅后端内部直连):
+	//
+	//	与拍卖不同,P2P 交易无 escrow 预冻,直接从双方活跃背包 / 余额在同一 MySQL 本地事务里对转 ——
+	//	  卖家:手 seller_items 给买家,收 buyer_items + price 金币;
+	//	  买家:手 buyer_items + price 金币给卖家,收 seller_items。
+	//	任一方道具 / 金币不足 → ERR_INVENTORY_INSUFFICIENT,整笔回滚。
+	//
+	// 幂等键 = order_id(雪花),同一订单重复结算只生效一次(不变量 §9.7)。
+	// 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
+	SettlePlayerTrade(context.Context, *SettlePlayerTradeRequest) (*SettlePlayerTradeResponse, error)
 	// ReleaseEscrow 拍卖挂单托管退还(系统接口,仅后端内部直连):
 	//
 	//	撤单 / 过期 / 完全成交后把某挂单 escrow 的残余资产退回玩家活跃余额并关闭托管。
@@ -226,6 +257,9 @@ func (UnimplementedInventoryServiceServer) FreezeForOrder(context.Context, *Free
 }
 func (UnimplementedInventoryServiceServer) SettleAuctionMatch(context.Context, *SettleAuctionMatchRequest) (*SettleAuctionMatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SettleAuctionMatch not implemented")
+}
+func (UnimplementedInventoryServiceServer) SettlePlayerTrade(context.Context, *SettlePlayerTradeRequest) (*SettlePlayerTradeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SettlePlayerTrade not implemented")
 }
 func (UnimplementedInventoryServiceServer) ReleaseEscrow(context.Context, *ReleaseEscrowRequest) (*ReleaseEscrowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReleaseEscrow not implemented")
@@ -358,6 +392,24 @@ func _InventoryService_SettleAuctionMatch_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InventoryService_SettlePlayerTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SettlePlayerTradeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServiceServer).SettlePlayerTrade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InventoryService_SettlePlayerTrade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServiceServer).SettlePlayerTrade(ctx, req.(*SettlePlayerTradeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InventoryService_ReleaseEscrow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReleaseEscrowRequest)
 	if err := dec(in); err != nil {
@@ -406,6 +458,10 @@ var InventoryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SettleAuctionMatch",
 			Handler:    _InventoryService_SettleAuctionMatch_Handler,
+		},
+		{
+			MethodName: "SettlePlayerTrade",
+			Handler:    _InventoryService_SettlePlayerTrade_Handler,
 		},
 		{
 			MethodName: "ReleaseEscrow",

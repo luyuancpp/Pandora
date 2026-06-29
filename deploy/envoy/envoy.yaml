@@ -157,6 +157,15 @@ static_resources:
                   prefix: "/pandora.chat.v1.ChatService/"
                 requires:
                   provider_name: "pandora_session"
+              # guild / group 服务所有 RPC 均需 JWT(player_id 以 JWT sub 为准,R5)
+              - match:
+                  prefix: "/pandora.guild.v1.GuildService/"
+                requires:
+                  provider_name: "pandora_session"
+              - match:
+                  prefix: "/pandora.group.v1.GroupService/"
+                requires:
+                  provider_name: "pandora_session"
               # trade 服务所有 RPC 均需 JWT(交易双方身份以 JWT sub 为准,R5)
               - match:
                   prefix: "/pandora.trade.v1.TradeService/"
@@ -240,6 +249,20 @@ static_resources:
                   prefix: "/pandora.chat.v1.ChatService/"
                 route:
                   cluster: chat_cluster
+                  timeout: 15s
+                  idle_timeout: 60s
+
+              # ----- guild / group(unary,立即完成型,demo 15s 超时)-----
+              - match:
+                  prefix: "/pandora.guild.v1.GuildService/"
+                route:
+                  cluster: guild_cluster
+                  timeout: 15s
+                  idle_timeout: 60s
+              - match:
+                  prefix: "/pandora.group.v1.GroupService/"
+                route:
+                  cluster: guild_cluster
                   timeout: 15s
                   idle_timeout: 60s
 
@@ -546,6 +569,27 @@ static_resources:
               socket_address:
                 address: host.docker.internal
                 port_value: 50007
+
+  # ===== guild_cluster（公会 + 临时群 GuildService/GroupService 同进程，unary，demo 15s 超时）=====
+  - name: guild_cluster
+    type: STRICT_DNS
+    dns_lookup_family: V4_ONLY
+    connect_timeout: 1s
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: guild_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: host.docker.internal
+                port_value: 50008
 
   # ===========================================================================
   # DS 面内部服务 cluster(供 :8444 pandora_ds_listener 使用,agones-dev.md §5.1)

@@ -203,6 +203,9 @@ pandora.dlq.<original_topic>     # 死信队列
 | `pandora.chat.world` | 16 | 1d | chat | **push** | 世界聊天推送 |
 | `pandora.chat.team` ⭐ | 8 | 1h | chat | **push** | 队伍聊天推送(key=player_id)|
 | `pandora.chat.private` ⭐ | 8 | 1d | chat | **push** | 私聊推送(key=target_player_id)|
+| `pandora.chat.guild` ⭐ | 8 | 1h | chat | **push** | 公会聊天推送(key=接收方 player_id,逐成员扇出,不落库)|
+| `pandora.chat.group` ⭐ | 8 | 1h | chat | **push** | 临时群聊推送(key=接收方 player_id,逐成员扇出,不落库)|
+| `pandora.guild.event` ⭐ | 4 | 1d | guild | **push** | 公会成员变更通知(入会 / 退会 / 踢人 / 解散,key=接收方 player_id)|
 | `pandora.player.update` | 8 | 7d | player / data_service | **push** + 缓存失效 | 玩家档案变更 |
 | `pandora.friend.event` ⭐ | 4 | 1d | friend | **push** | 好友请求 / 上线提醒 |
 | `pandora.system.notify` ⭐ | 4 | 7d | 运营 / 各 go | **push** | 系统公告 / 邮件 / 红点 |
@@ -294,6 +297,7 @@ pandora.dlq.<original_topic>     # 死信队列
 | chat | 50005 | 51005 |
 | player_locator | 50006 | 51006 |
 | leaderboard | 50007 | 51007 |
+| guild | 50008 | 51008 |
 | team | 50010 | 51010 |
 | matchmaker | 50011 | 51011 |
 | trade | 50012 | 51012 |
@@ -307,7 +311,7 @@ pandora.dlq.<original_topic>     # 死信队列
 
 ⭐ = 2026-06-04 终版新增。push 服务用 Kratos transport/grpc 暴露 server stream,客户端经 Envoy 连过来(gRPC-Web → gRPC 转换)。
 
-**所有 go 服务全部用 gRPC 端口**(50001-50022 段),协议统一。inventory(W5 ③ 新增,economy 域,50015/51015)落在 push(50014)与 battle 块(50020+)之间的空档。auction(2026-06-19 新增,全服拍卖行 / 撮合,economy 域,50016/51016)紧随 inventory。leaderboard(2026-06-27 新增,通用排行榜,runtime 域,50007/51007)落在 player_locator(50006)与 team 块(50010)之间的空档。
+**所有 go 服务全部用 gRPC 端口**(50001-50022 段),协议统一。inventory(W5 ③ 新增,economy 域,50015/51015)落在 push(50014)与 battle 块(50020+)之间的空档。auction(2026-06-19 新增,全服拍卖行 / 撮合,economy 域,50016/51016)紧随 inventory。leaderboard(2026-06-27 新增,通用排行榜,runtime 域,50007/51007)落在 player_locator(50006)与 team 块(50010)之间的空档。guild(2026-06-27 新增,公会 + 临时群同进程,social 域,50008/51008)落在 leaderboard(50007)与 team 块(50010)之间的空档。
 
 ### 6.3 Edge Gateway(Envoy)
 

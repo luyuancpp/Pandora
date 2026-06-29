@@ -146,6 +146,19 @@ enum ErrCode : int {
   ERR_LOCATOR_CONFLICT = 9202,
   ERR_PUSH_OFFLINE_CORRUPTED = 9301,
   ERR_PUSH_KAFKA_CONSUMER_DOWN = 9302,
+  ERR_GUILD_NOT_FOUND = 9401,
+  ERR_GUILD_ALREADY_IN_GUILD = 9402,
+  ERR_GUILD_FULL = 9403,
+  ERR_GUILD_NOT_LEADER = 9404,
+  ERR_GUILD_NO_PERMISSION = 9405,
+  ERR_GUILD_NAME_TAKEN = 9406,
+  ERR_GUILD_REQUEST_INVALID = 9407,
+  ERR_GUILD_NOT_MEMBER = 9408,
+  ERR_GROUP_NOT_FOUND = 9501,
+  ERR_GROUP_FULL = 9502,
+  ERR_GROUP_NOT_OWNER = 9503,
+  ERR_GROUP_NOT_MEMBER = 9504,
+  ERR_GROUP_ALREADY_IN = 9505,
   ERR_DATA_VERSION_MISMATCH = 10001,
   ERR_DATA_LOCK_TIMEOUT = 10002,
   ERR_DATA_MIGRATE = 10003,
@@ -155,6 +168,11 @@ enum ErrCode : int {
   ERR_AUCTION_INSUFFICIENT = 12004,
   ERR_AUCTION_IDEMPOTENCY_CONFLICT = 12005,
   ERR_AUCTION_MARKET_BUSY = 12006,
+  ERR_LEADERBOARD_BOARD_NOT_FOUND = 13001,
+  ERR_LEADERBOARD_ENTRY_NOT_FOUND = 13002,
+  ERR_LEADERBOARD_INVALID_BOARD = 13003,
+  ERR_LEADERBOARD_SETTLE_CONFLICT = 13004,
+  ERR_LEADERBOARD_REWARD_FAILED = 13005,
   ErrCode_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   ErrCode_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -165,11 +183,11 @@ extern const uint32_t ErrCode_internal_data_[];
 inline constexpr ErrCode ErrCode_MIN =
     static_cast<ErrCode>(0);
 inline constexpr ErrCode ErrCode_MAX =
-    static_cast<ErrCode>(12006);
+    static_cast<ErrCode>(13005);
 [[nodiscard]] inline bool ErrCode_IsValid(int value) {
   return ::google::protobuf::internal::ValidateEnum(value, ErrCode_internal_data_);
 }
-inline constexpr int ErrCode_ARRAYSIZE = 12006 + 1;
+inline constexpr int ErrCode_ARRAYSIZE = 13005 + 1;
 [[nodiscard]] const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL
 ErrCode_descriptor();
 [[nodiscard]] inline auto ProtobufInternalGetEnumDescriptor(ErrCode) {

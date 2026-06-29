@@ -115,13 +115,13 @@ agones:
 # 与战斗 DS 同一个 staged/cooked PandoraServer.exe,靠 map_name 区分大厅/战斗关卡;端口与战斗 DS(7800+)错开用 7777。
 # 不能指向 Pandora/Binaries/Win64 裸二进制,否则缺 cooked 内容会在加载资产时崩溃。
 local_hub:
-  executable_path: "F:\\work\\PandoraDSArchive\\WindowsServerLocal\\Pandora\\Binaries\\Win64\\PandoraServer.exe"
+  executable_path: "F:\\work\\Pandora-Client-SVN\\Packages\\Server_Win64_Development\\WindowsServer\\Pandora\\Binaries\\Win64\\PandoraServer.exe"
   map_name: "/Game/Test/Level/MainCity?game=/Script/Pandora.PandoraHubGameMode" # 大厅关卡(留空用 DS 默认关卡)
   advertise_host: "127.0.0.1"                  # 返回给客户端 NetDriver 连接的 host
   port: 7777                                   # 常驻 Hub DS 监听端口
   # region: "cn"                               # 留空取 hub.default_region
   # capacity: 500                              # 留空取 hub.default_capacity
-  working_dir: "F:\\work\\PandoraDSArchive\\WindowsServerLocal" # DS 进程工作目录(staged 根目录)
+  working_dir: "F:\\work\\Pandora-Client-SVN\\Packages\\Server_Win64_Development\\WindowsServer" # DS 进程工作目录(staged 根目录)
   log_dir: "run/dev/logs/ds"                   # Hub DS stdout/stderr 落 pandora-hub-local.log
   # extra_args: ["-PANDORA_BACKEND=https://127.0.0.1:8444"]
   extra_env:

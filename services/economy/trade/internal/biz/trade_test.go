@@ -103,7 +103,7 @@ func newUC(repo *fakeRepo, ledger ResourceLedger) (*TradeUsecase, *fakeAudit) {
 }
 
 func items() []*tradev1.TradeItem {
-	return []*tradev1.TradeItem{{ItemUid: "sword-1", Count: 1}}
+	return []*tradev1.TradeItem{{ItemConfigId: 1001, Count: 1}}
 }
 
 func wantCode(t *testing.T, err error, code errcode.Code) {
@@ -118,7 +118,7 @@ func wantCode(t *testing.T, err error, code errcode.Code) {
 func TestCreateOrder_OK(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, err := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, err := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -133,20 +133,20 @@ func TestCreateOrder_OK(t *testing.T) {
 
 func TestCreateOrder_Self(t *testing.T) {
 	uc, _ := newUC(newFakeRepo(), &fakeLedger{})
-	_, err := uc.CreateOrder(context.Background(), 1, 1, items(), 100)
+	_, err := uc.CreateOrder(context.Background(), 1, 1, items(), nil, 100)
 	wantCode(t, err, errcode.ErrInvalidArg)
 }
 
 func TestCreateOrder_NoItems(t *testing.T) {
 	uc, _ := newUC(newFakeRepo(), &fakeLedger{})
-	_, err := uc.CreateOrder(context.Background(), 1, 2, nil, 100)
+	_, err := uc.CreateOrder(context.Background(), 1, 2, nil, nil, 100)
 	wantCode(t, err, errcode.ErrInvalidArg)
 }
 
 func TestTwoPhaseConfirm_OK(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 
 	// 买方先确认 → BUYER_CONFIRMED
 	st, err := uc.ConfirmOrder(context.Background(), 2, id)
@@ -170,7 +170,7 @@ func TestTwoPhaseConfirm_OK(t *testing.T) {
 func TestConfirm_SellerBeforeBuyer(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 
 	// 卖方在买方之前确认 → 顺序错误
 	_, err := uc.ConfirmOrder(context.Background(), 1, id)
@@ -180,7 +180,7 @@ func TestConfirm_SellerBeforeBuyer(t *testing.T) {
 func TestConfirm_Outsider(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 
 	_, err := uc.ConfirmOrder(context.Background(), 99, id)
 	wantCode(t, err, errcode.ErrUnauthorized)
@@ -189,7 +189,7 @@ func TestConfirm_Outsider(t *testing.T) {
 func TestConfirm_SettleInsufficient(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{fail: true})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 	_, _ = uc.ConfirmOrder(context.Background(), 2, id) // buyer
 
 	st, err := uc.ConfirmOrder(context.Background(), 1, id) // seller → settle fails
@@ -205,7 +205,7 @@ func TestConfirm_SettleInsufficient(t *testing.T) {
 func TestCancel_OK(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 
 	if err := uc.CancelOrder(context.Background(), 2, id); err != nil {
 		t.Fatalf("cancel err: %v", err)
@@ -218,7 +218,7 @@ func TestCancel_OK(t *testing.T) {
 func TestCancel_Terminal(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 	_, _ = uc.ConfirmOrder(context.Background(), 2, id)
 	_, _ = uc.ConfirmOrder(context.Background(), 1, id) // COMPLETED
 
@@ -229,7 +229,7 @@ func TestCancel_Terminal(t *testing.T) {
 func TestConfirm_Expired(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
+	id, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
 	// 手动把订单改成已过期。
 	repo.orders[id].ExpiresAtMs = time.Now().Add(-time.Minute).UnixMilli()
 
@@ -249,8 +249,8 @@ func TestConfirm_Expired(t *testing.T) {
 func TestListMyOrders_ActiveOnly(t *testing.T) {
 	repo := newFakeRepo()
 	uc, _ := newUC(repo, &fakeLedger{})
-	id1, _ := uc.CreateOrder(context.Background(), 1, 2, items(), 100)
-	id2, _ := uc.CreateOrder(context.Background(), 1, 3, items(), 200)
+	id1, _ := uc.CreateOrder(context.Background(), 1, 2, items(), nil, 100)
+	id2, _ := uc.CreateOrder(context.Background(), 1, 3, items(), nil, 200)
 	_ = uc.CancelOrder(context.Background(), 1, id2) // id2 终态
 
 	all, err := uc.ListMyOrders(context.Background(), 1, false)

@@ -8,6 +8,7 @@ package vu
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -17,6 +18,9 @@ import (
 	"github.com/luyuancpp/pandora/robot/stress/internal/client"
 	"github.com/luyuancpp/pandora/robot/stress/internal/scenario"
 	"github.com/luyuancpp/pandora/robot/stress/internal/stats"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	auctionv1 "github.com/luyuancpp/pandora/proto/gen/go/pandora/auction/v1"
 	battlev1 "github.com/luyuancpp/pandora/proto/gen/go/pandora/battle/v1"
@@ -101,15 +105,34 @@ func (v *VU) authCtx(ctx context.Context) context.Context {
 	return client.OutgoingContext(ctx, v.playerID)
 }
 
-// timed 包一次 RPC:记录时延 + 错误计数。
-func (v *VU) timed(fn func() error) error {
+// timed 包一次 RPC：记录时延 + 按调用点归因的错误计数。
+// op 是低基数的稳定标签（service.Method），不要塞 player_id 等高基数值。
+// 关停排空阶段 ctx 被取消造成的 context.Canceled 不算后端错误,单独归到 drain 分项,
+// 不进 RPCErrors;其余错误(含 DeadlineExceeded 等真实失败)才计入 error。
+func (v *VU) timed(op string, fn func() error) error {
 	start := time.Now()
 	err := fn()
 	v.stat.ObserveRPC(float64(time.Since(start).Microseconds()) / 1000.0)
 	if err != nil {
-		v.stat.Counters.RPCErrors.Add(1)
+		if isShutdownCanceled(err) {
+			v.stat.ObserveDrain(op)
+		} else {
+			v.stat.ObserveErr(op)
+		}
 	}
 	return err
+}
+
+// isShutdownCanceled 判定一个错误是否是压测进程主动收敛(ctx 取消)导致的在途 RPC 中断。
+// 命中 context.Canceled 或 gRPC codes.Canceled;DeadlineExceeded(真实超时)不算,仍是 error。
+func isShutdownCanceled(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	return status.Code(err) == codes.Canceled
 }
 
 // login 真实走 LoginService,首次登录由 login 服务 devAutoRegister 自动建号。
@@ -127,7 +150,7 @@ func (v *VU) login(ctx context.Context) error {
 		Locale:        "zh-CN",
 	}
 	var resp *loginv1.LoginResponse
-	err := v.timed(func() error {
+	err := v.timed("login.Login", func() error {
 		var e error
 		resp, e = cli.Login(client.OutgoingContext(ctx, 0), req)
 		return e
@@ -153,7 +176,11 @@ func (v *VU) subscribePush(ctx context.Context) {
 		LastSeenMs:   0,
 	})
 	if err != nil {
-		v.stat.Counters.RPCErrors.Add(1)
+		if isShutdownCanceled(err) {
+			v.stat.ObserveDrain("push.Subscribe")
+		} else {
+			v.stat.ObserveErr("push.Subscribe")
+		}
 		return
 	}
 	v.stat.Counters.SubscribeActive.Add(1)
@@ -186,7 +213,7 @@ func (v *VU) doAction(ctx context.Context, a behavior.Action) {
 }
 
 func (v *VU) actLocator(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("locator.SetLocation", func() error {
 		_, e := v.pool.Locator.SetLocation(v.authCtx(ctx), &locatorv1.SetLocationRequest{
 			PlayerId: v.playerID,
 			Location: &locatorv1.Location{
@@ -200,28 +227,28 @@ func (v *VU) actLocator(ctx context.Context) {
 }
 
 func (v *VU) actGetProfile(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("player.GetProfile", func() error {
 		_, e := v.pool.Player.GetProfile(v.authCtx(ctx), &playerv1.GetProfileRequest{PlayerId: v.playerID})
 		return e
 	})
 }
 
 func (v *VU) actGetMyTeam(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("team.GetMyTeam", func() error {
 		_, e := v.pool.Team.GetMyTeam(v.authCtx(ctx), &teamv1.GetMyTeamRequest{PlayerId: v.playerID})
 		return e
 	})
 }
 
 func (v *VU) actListFriends(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("friend.ListFriends", func() error {
 		_, e := v.pool.Friend.ListFriends(v.authCtx(ctx), &friendv1.ListFriendsRequest{PlayerId: v.playerID})
 		return e
 	})
 }
 
 func (v *VU) actSendMessage(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("chat.SendMessage", func() error {
 		_, e := v.pool.Chat.SendMessage(v.authCtx(ctx), &chatv1.SendMessageRequest{
 			SenderId:  v.playerID,
 			Channel:   chatv1.ChatChannel_CHAT_CHANNEL_WORLD,
@@ -233,7 +260,7 @@ func (v *VU) actSendMessage(ctx context.Context) {
 }
 
 func (v *VU) actListMarket(ctx context.Context) {
-	_ = v.timed(func() error {
+	_ = v.timed("auction.ListMarket", func() error {
 		_, e := v.pool.Auction.ListMarket(v.authCtx(ctx), &auctionv1.ListMarketRequest{
 			MarketId: 1,
 			Side:     auctionv1.OrderSide_ORDER_SIDE_UNSPECIFIED,
@@ -248,7 +275,7 @@ func (v *VU) actListMarket(ctx context.Context) {
 func (v *VU) actMatchFlow(ctx context.Context) {
 	// 1) 建队(单人队即可施压撮合 / 锚定埋点)。
 	var teamID uint64
-	if err := v.timed(func() error {
+	if err := v.timed("team.CreateTeam", func() error {
 		resp, e := v.pool.Team.CreateTeam(v.authCtx(ctx), &teamv1.CreateTeamRequest{PlayerId: v.playerID})
 		if e != nil {
 			return e
@@ -266,7 +293,7 @@ func (v *VU) actMatchFlow(ctx context.Context) {
 	defer v.leaveTeamBestEffort(ctx, teamID)
 
 	// 2) 单人队也必须 READY 后才能通过 matchmaker 的 team 校验。
-	if err := v.timed(func() error {
+	if err := v.timed("team.SetReady", func() error {
 		resp, e := v.pool.Team.SetReady(v.authCtx(ctx), &teamv1.SetReadyRequest{
 			TeamId:   teamID,
 			PlayerId: v.playerID,
@@ -284,9 +311,9 @@ func (v *VU) actMatchFlow(ctx context.Context) {
 		return
 	}
 
-	// 3) 入队匹配。
-	var matchID uint64
-	if err := v.timed(func() error {
+	// 3) 入队匹配。StartMatch 返回 ticket_id 作为排队句柄(不是最终 match_id)。
+	var ticketHandle uint64
+	if err := v.timed("match.StartMatch", func() error {
 		resp, e := v.pool.Matchmaker.StartMatch(v.authCtx(ctx), &matchv1.StartMatchRequest{TeamId: teamID})
 		if e != nil {
 			return e
@@ -294,20 +321,44 @@ func (v *VU) actMatchFlow(ctx context.Context) {
 		if resp.GetCode() != commonv1.ErrCode_OK {
 			return fmt.Errorf("start_match code=%v", resp.GetCode())
 		}
-		matchID = resp.GetMatchId()
+		ticketHandle = resp.GetMatchId()
 		return nil
-	}); err != nil || matchID == 0 {
+	}); err != nil || ticketHandle == 0 {
 		return
 	}
 	v.stat.Counters.MatchEnqueue.Add(1)
 
-	// 4) 轮询撮合进度,撮到则确认。
-	stage := v.pollMatch(ctx, matchID)
-	if stage == matchv1.MatchStage_MATCH_STAGE_FOUND || stage == matchv1.MatchStage_MATCH_STAGE_CONFIRM {
-		if err := v.timed(func() error {
+	// matched 标记本轮是否已成局(进入 READY/ALLOCATING 等确认后阶段),决定收尾是否取消票据。
+	matched := false
+
+	// 入队后本轮结束尽力退出匹配队列(释放 player→ticket claim):
+	//   - 未成局(未撮到 / 放弃轮询)的票据若不取消,残留 claim 会让下一轮 StartMatch 撞
+	//     ErrMatchAlreadyMatching(4002)——LeaveTeam best-effort 消不掉(它只释放 team claim,
+	//     撮合票据 claim 在 matchmaker 侧,要靠 CancelMatch)。
+	//   - 已成局的票据不取消:成功上报 battle 后由 battle_result.ReleaseMatch 清理;且对仍处
+	//     确认期(CONFIRM)的已成局票据调 CancelMatch 会触发服务端 ConfirmMatch(false),把这局
+	//     判失败,反而污染撮合 —— 与 auto_confirm 下 ConfirmMatch 报错同源。故成局后不取消。
+	defer func() {
+		if !matched {
+			v.cancelMatchBestEffort(ctx)
+		}
+	}()
+
+	// 4) 轮询撮合进度。pollMatch 同时回传服务端真正的 match_id
+	//    (排队期回 ticket_id,成局后回 snowflake match_id)。
+	stage, realMatchID := v.pollMatch(ctx, ticketHandle)
+
+	// 仅手动确认模式(auto_confirm_match=false)才需要客户端确认来推进 match。
+	// auto_confirm 下服务端撮合后自动确认并直接拉 DS:确认期 ~1s 内 match 仍持久化为 CONFIRM
+	// (onAllConfirmed 在 AllocateBattle 返回后才写 READY),此时 VU 若抢发 ConfirmMatch 会与
+	// 「自动确认→拉DS→上报→释放」流水线竞态,撞上已推进/已删除的 match 而报错(上一轮 76 个
+	// match.ConfirmMatch error 即此)。故 auto 模式 VU 不发 ConfirmMatch,只轮询到 READY。
+	if !v.cfg.AutoConfirmMatch &&
+		(stage == matchv1.MatchStage_MATCH_STAGE_FOUND || stage == matchv1.MatchStage_MATCH_STAGE_CONFIRM) {
+		if err := v.timed("match.ConfirmMatch", func() error {
 			resp, e := v.pool.Matchmaker.ConfirmMatch(v.authCtx(ctx), &matchv1.ConfirmMatchRequest{
 				PlayerId: v.playerID,
-				MatchId:  matchID,
+				MatchId:  realMatchID,
 				Accept:   true,
 			})
 			if e != nil {
@@ -318,16 +369,29 @@ func (v *VU) actMatchFlow(ctx context.Context) {
 			}
 			return nil
 		}); err == nil {
-			v.stat.Counters.MatchConfirmed.Add(1)
-			stage = v.pollMatch(ctx, matchID)
+			stage, realMatchID = v.pollMatch(ctx, ticketHandle)
 		}
 	}
 
-	// 5) 撮合分配到战斗后,阶段 1 stub 模式由 robot 代 DS 直接上报 battle_result。
-	if v.cfg.DSMode == "stub" &&
-		(stage == matchv1.MatchStage_MATCH_STAGE_READY || stage == matchv1.MatchStage_MATCH_STAGE_ALLOCATING) {
+	// 进入确认后阶段(READY/ALLOCATING)即视为成局,计一次 MatchConfirmed。不论自动/手动确认
+	// 都按"观测到成局"口径计数,避免 auto 模式下 match_confirmed 恒为 0 让 enq→conf→disp→battle
+	// 漏斗断裂、被误读成确认环节全挂。
+	if stage == matchv1.MatchStage_MATCH_STAGE_READY ||
+		stage == matchv1.MatchStage_MATCH_STAGE_ALLOCATING {
+		matched = true
+		v.stat.Counters.MatchConfirmed.Add(1)
+	}
+
+	// 5) 成局后,阶段 1 stub 模式由 robot 代 DS 上报 battle_result。
+	//    必须用服务端真正的 match_id 上报:用 ticket_id 上报会让 battle_result.ReleaseMatch
+	//    清不掉本局成员的 player→ticket claim,玩家回 Hub 再 StartMatch 必撞 4002。
+	if v.cfg.DSMode == "stub" && matched {
 		v.stat.Counters.MatchDispatched.Add(1)
-		v.reportBattle(ctx, matchID)
+		battleMatchID := realMatchID
+		if battleMatchID == 0 {
+			battleMatchID = ticketHandle
+		}
+		v.reportBattle(ctx, battleMatchID)
 	}
 }
 
@@ -342,32 +406,51 @@ func (v *VU) leaveTeamBestEffort(ctx context.Context, teamID uint64) {
 	v.stat.ObserveRPC(float64(time.Since(start).Microseconds()) / 1000.0)
 }
 
-// pollMatch 轮询匹配进度若干次,返回最后看到的阶段。
-func (v *VU) pollMatch(ctx context.Context, matchID uint64) matchv1.MatchStage {
+// cancelMatchBestEffort 尽力退出匹配队列,释放本人 player→ticket claim,避免下一轮
+// StartMatch 撞 ErrMatchAlreadyMatching(4002)。已成局并上报 battle 的票据此时已被
+// battle_result.ReleaseMatch 清掉,CancelMatch 查无票据(ErrMatchNotFound)属预期,
+// 记录时延但不计错误(不走 timed)。服务端 CancelMatch 以 JWT player_id 反查本人票据,
+// 请求体字段被忽略,authCtx 已带身份;match_id 传 0 即可。
+func (v *VU) cancelMatchBestEffort(ctx context.Context) {
+	start := time.Now()
+	_, _ = v.pool.Matchmaker.CancelMatch(v.authCtx(ctx), &matchv1.CancelMatchRequest{
+		PlayerId: v.playerID,
+	})
+	v.stat.ObserveRPC(float64(time.Since(start).Microseconds()) / 1000.0)
+}
+
+// pollMatch 轮询匹配进度若干次,返回最后看到的阶段与服务端真正的 match_id。
+// 入参 ticketHandle 是 StartMatch 返回的排队句柄;progress.match_id 在排队期回的是
+// ticket_id,成局后回 snowflake match_id(上报 battle / ReleaseMatch 必须用它)。
+func (v *VU) pollMatch(ctx context.Context, ticketHandle uint64) (matchv1.MatchStage, uint64) {
 	stage := matchv1.MatchStage_MATCH_STAGE_UNSPECIFIED
+	realMatchID := uint64(0)
 	for i := 0; i < 30; i++ {
 		select {
 		case <-ctx.Done():
-			return stage
+			return stage, realMatchID
 		default:
 		}
-		_ = v.timed(func() error {
-			resp, e := v.pool.Matchmaker.GetMatchProgress(v.authCtx(ctx), &matchv1.GetMatchProgressRequest{MatchId: matchID})
+		_ = v.timed("match.GetMatchProgress", func() error {
+			resp, e := v.pool.Matchmaker.GetMatchProgress(v.authCtx(ctx), &matchv1.GetMatchProgressRequest{MatchId: ticketHandle})
 			if e != nil {
 				return e
 			}
 			if p := resp.GetProgress(); p != nil {
 				stage = p.GetStage()
+				if id := p.GetMatchId(); id != 0 {
+					realMatchID = id
+				}
 			}
 			return nil
 		})
 		if stage == matchv1.MatchStage_MATCH_STAGE_READY ||
 			stage == matchv1.MatchStage_MATCH_STAGE_FAILED {
-			return stage
+			return stage, realMatchID
 		}
 		time.Sleep(300 * time.Millisecond)
 	}
-	return stage
+	return stage, realMatchID
 }
 
 // reportBattle 模拟 DS 结算上报(stub 模式下由 robot 代 DS,MMR 仍由后端算)。
@@ -391,7 +474,7 @@ func (v *VU) reportBattle(ctx context.Context, matchID uint64) {
 			Assists:  int32(v.rng.Intn(15)),
 		}},
 	}
-	if err := v.timed(func() error {
+	if err := v.timed("battle.ReportResult", func() error {
 		resp, e := v.pool.BattleResult.ReportResult(v.authCtx(ctx), &battlev1.ReportResultRequest{Result: result})
 		if e != nil {
 			return e

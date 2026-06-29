@@ -27,6 +27,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/redisx"
 
@@ -86,6 +87,20 @@ func main() {
 
 	// 5. KafkaConsumer:每 topic 一个,共享 GroupID
 	consumers := mustBuildConsumers(&cfg, conns, offline, helper)
+	// 蜂窝扩容:多 Cell 时注入归属守卫(本 cell 消费者只应交付 owner==本 cell 的玩家,
+	// 否则告警暴露漂移;单 Cell mode 空 → router=nil,行为不变)。
+	if router, closeCell, e := etcdtable.BuildRouter(context.Background(), cfg.CellRoute); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if router != nil {
+		if closeCell != nil {
+			defer func() { _ = closeCell() }()
+		}
+		for _, kc := range consumers {
+			kc.SetCellOwnership(router, cfg.CellRoute.SelfRegion, cfg.CellRoute.SelfCell)
+		}
+		helper.Infow("msg", "cellroute_enabled", "self_region", cfg.CellRoute.SelfRegion, "self_cell", cfg.CellRoute.SelfCell)
+	}
 	for _, kc := range consumers {
 		kc.Start()
 	}

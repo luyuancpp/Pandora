@@ -25,6 +25,7 @@ service FriendService {
   rpc Block(BlockRequest) returns (BlockResponse);
   rpc Unblock(UnblockRequest) returns (UnblockResponse);
   rpc ListBlocks(ListBlocksRequest) returns (ListBlocksResponse);
+  rpc RecommendFriends(RecommendFriendsRequest) returns (RecommendFriendsResponse);
 }
 
 enum FriendRequestStatus {
@@ -155,6 +156,33 @@ message ListBlocksRequest {
 message ListBlocksResponse {
   pandora.common.v1.ErrCode code = 1;
   repeated BlockInfo blocks = 2;
+}
+
+// RecommendedFriendInfo 是客户端可见的「推荐好友」视图(CLAUDE.md §5.8)。
+// nickname 留空,由客户端按 player_id 向 player 服务批量解析展示名(最小数据单位)。
+// mutual_friend_count 是与查询者的共同好友数(排序依据,0 表示随机兜底候选)。
+message RecommendedFriendInfo {
+  uint64 player_id           = 1;
+  string nickname            = 2;
+  bool   is_online           = 3;
+  int64  last_seen_ms        = 4;
+  uint32 mutual_friend_count = 5;
+}
+
+message RecommendFriendsRequest {
+  // player_id 由服务端以 JWT ctx 为准覆盖(R5),请求体可不填。
+  uint64 player_id = 1;
+  // limit 期望返回数量(默认 5,服务端按上限收敛,0 取默认)。
+  uint32 limit = 2;
+  // exclude_player_ids 本轮已展示 / 不感兴趣的候选,刷新时回传以拿到新一批(无状态去重)。
+  repeated uint64 exclude_player_ids = 3;
+}
+
+message RecommendFriendsResponse {
+  pandora.common.v1.ErrCode code = 1;
+  // 推荐候选:好友的好友(按共同好友数排序)优先,不足时随机活跃玩家兜底。
+  // 已排除自己 / 已是好友 / 互相拉黑 / pending 请求 / exclude_player_ids。
+  repeated RecommendedFriendInfo recommendations = 2;
 }
 
 // ===== 推送事件(kafka pandora.friend.event)=====

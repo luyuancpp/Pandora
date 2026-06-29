@@ -71,6 +71,12 @@ PROTOBUF_CONSTINIT ::google::protobuf::internal::ReflectionData
         {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
         // ::pandora::friend_::v1::ListBlocksResponse
         {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
+        // ::pandora::friend_::v1::RecommendedFriendInfo
+        {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
+        // ::pandora::friend_::v1::RecommendFriendsRequest
+        {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
+        // ::pandora::friend_::v1::RecommendFriendsResponse
+        {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
         // ::pandora::friend_::v1::FriendEvent
         {&::_pbi::kDescriptorMethods, &::descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto, /* tracker*/ nullptr,},
 };
@@ -942,6 +948,344 @@ const ::_pbi::ClassData* RejectFriendRequest_get_class_data() {
   return RejectFriendRequest_globals_.GetClassData();
 #else
   return RejectFriendRequest_class_data_.base();
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+}
+}  // namespace
+#endif  // PROTOBUF_CUSTOM_VTABLE
+class RecommendedFriendInfo::_Internal {
+ public:
+  using HasBits = decltype(::std::declval<RecommendedFriendInfo>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_._has_bits_);
+};
+
+constexpr RecommendedFriendInfo::ParseTableT_ RecommendedFriendInfo::InternalGenerateParseTable_(const ::_pbi::ClassData* class_data) {
+  return ParseTableT_{
+    {
+      PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_._has_bits_),
+      0, // no _extensions_
+      5, 56,  // max_field_number, fast_idx_mask
+      offsetof(ParseTableT_, field_lookup_table),
+      4294967264,  // skipmap
+      offsetof(ParseTableT_, field_entries),
+      5,  // num_field_entries
+      0,  // num_aux_entries
+      offsetof(ParseTableT_, field_names),  // no aux_entries
+      class_data,
+      nullptr,  // post_loop_handler
+      ::_pbi::TcParser::GenericFallback,  // fallback
+      #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+      ::_pbi::TcParser::GetTable<::pandora::friend_::v1::RecommendedFriendInfo>(),  // to_prefetch
+      #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+    }, {{
+      {::_pbi::TcParser::MiniParse, {}},
+      // uint64 player_id = 1 [json_name = "playerId"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(RecommendedFriendInfo, _impl_.player_id_), 1>(),
+       {8, 1, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.player_id_)}},
+      // string nickname = 2 [json_name = "nickname"];
+      {::_pbi::TcParser::FastUS1,
+       {18, 0, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.nickname_)}},
+      // bool is_online = 3 [json_name = "isOnline"];
+      {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(RecommendedFriendInfo, _impl_.is_online_), 3>(),
+       {24, 3, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.is_online_)}},
+      // int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(RecommendedFriendInfo, _impl_.last_seen_ms_), 2>(),
+       {32, 2, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.last_seen_ms_)}},
+      // uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(RecommendedFriendInfo, _impl_.mutual_friend_count_), 4>(),
+       {40, 4, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.mutual_friend_count_)}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
+    }}, {{
+      65535, 65535
+    }}, {{
+      // uint64 player_id = 1 [json_name = "playerId"];
+      {PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.player_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      // string nickname = 2 [json_name = "nickname"];
+      {PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.nickname_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+      // bool is_online = 3 [json_name = "isOnline"];
+      {PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.is_online_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
+      // int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+      {PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.last_seen_ms_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      // uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+      {PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.mutual_friend_count_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
+    }},
+    // no aux_entries
+    {{
+      "\47\0\10\0\0\0\0\0"
+      "pandora.friend.v1.RecommendedFriendInfo"
+      "nickname"
+    }},
+  };
+}
+
+
+inline constexpr RecommendedFriendInfo::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        nickname_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        player_id_{::uint64_t{0u}},
+        last_seen_ms_{::int64_t{0}},
+        is_online_{false},
+        mutual_friend_count_{0u} {}
+
+template <typename>
+constexpr RecommendedFriendInfo::RecommendedFriendInfo(::_pbi::ConstantInitialized,
+                       const ::_pbi::ClassData* PROTOBUF_NONNULL class_data)
+    : ::google::protobuf::Message(
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          class_data
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          ),
+      _impl_(internal_visibility(), ::_pbi::ConstantInitialized()) {
+}
+inline void* PROTOBUF_NONNULL RecommendedFriendInfo::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) RecommendedFriendInfo(arena);
+}
+constexpr auto RecommendedFriendInfo::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(RecommendedFriendInfo), alignof(RecommendedFriendInfo));
+}
+constexpr auto RecommendedFriendInfo::InternalGenerateClassData_(
+    const MessageLite& prototype,
+    const ::google::protobuf::internal::TcParseTableBase* tc_table) {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &prototype,
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+          &_table_.header,
+#else
+          tc_table,
+#endif
+          nullptr,  // IsInitialized
+          &RecommendedFriendInfo::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<RecommendedFriendInfo>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &RecommendedFriendInfo::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<RecommendedFriendInfo>(), &RecommendedFriendInfo::ByteSizeLong,
+              &RecommendedFriendInfo::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_._cached_size_),
+          false,
+      },
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+      &file_reflection_data[21],
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+      &::_pbi::kDescriptorMethods,
+      &descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto,
+      nullptr,  // tracker
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  };
+}
+struct RecommendedFriendInfoGlobalsTypeInternal : ::_pbi::MessageGlobalsBase {
+  constexpr RecommendedFriendInfoGlobalsTypeInternal()
+      :
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+        _default(::_pbi::ConstantInitialized{},
+                 RecommendedFriendInfo_class_data_.base())
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+        MessageGlobalsBase(RecommendedFriendInfo::InternalGenerateClassData_(
+            _default, &RecommendedFriendInfo_globals_._table.header)),
+        _default(::_pbi::ConstantInitialized{}, GetClassData()),
+        _table(::_pbi::PrivateAccess::GenerateParseTable<RecommendedFriendInfo>(
+            GetClassData()))
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  {
+  }
+  ~RecommendedFriendInfoGlobalsTypeInternal() {}
+  union {
+    alignas(::_pbi::kMaxMessageAlignment) RecommendedFriendInfo _default;
+  };
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  decltype(::_pbi::PrivateAccess::GenerateParseTable<RecommendedFriendInfo>(
+      ::std::declval<const ::_pbi::ClassData*>())) _table;
+#endif
+};
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+static_assert(PROTOBUF_FIELD_OFFSET(RecommendedFriendInfoGlobalsTypeInternal, _default) ==
+              ::_pbi::MessageGlobalsBase::OffsetToDefault());
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PROTOBUF_MESSAGE_GLOBALS_CONST RecommendedFriendInfoGlobalsTypeInternal RecommendedFriendInfo_globals_
+        PROTOBUF_MESSAGE_GLOBALS_SECTION(.data.rel.ro);
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+namespace {
+const ::_pbi::ClassData* RecommendedFriendInfo_get_class_data() {
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  return RecommendedFriendInfo_globals_.GetClassData();
+#else
+  return RecommendedFriendInfo_class_data_.base();
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+}
+}  // namespace
+#endif  // PROTOBUF_CUSTOM_VTABLE
+class RecommendFriendsRequest::_Internal {
+ public:
+  using HasBits = decltype(::std::declval<RecommendFriendsRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_._has_bits_);
+};
+
+constexpr RecommendFriendsRequest::ParseTableT_ RecommendFriendsRequest::InternalGenerateParseTable_(const ::_pbi::ClassData* class_data) {
+  return ParseTableT_{
+    {
+      PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_._has_bits_),
+      0, // no _extensions_
+      3, 24,  // max_field_number, fast_idx_mask
+      offsetof(ParseTableT_, field_lookup_table),
+      4294967288,  // skipmap
+      offsetof(ParseTableT_, field_entries),
+      3,  // num_field_entries
+      0,  // num_aux_entries
+      offsetof(ParseTableT_, field_names),  // no aux_entries
+      class_data,
+      nullptr,  // post_loop_handler
+      ::_pbi::TcParser::GenericFallback,  // fallback
+      #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+      ::_pbi::TcParser::GetTable<::pandora::friend_::v1::RecommendFriendsRequest>(),  // to_prefetch
+      #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+    }, {{
+      {::_pbi::TcParser::MiniParse, {}},
+      // uint64 player_id = 1 [json_name = "playerId"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(RecommendFriendsRequest, _impl_.player_id_), 1>(),
+       {8, 1, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.player_id_)}},
+      // uint32 limit = 2 [json_name = "limit"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(RecommendFriendsRequest, _impl_.limit_), 2>(),
+       {16, 2, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.limit_)}},
+      // repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+      {::_pbi::TcParser::FastV64P1,
+       {26, 0, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.exclude_player_ids_)}},
+    }}, {{
+      65535, 65535
+    }}, {{
+      // uint64 player_id = 1 [json_name = "playerId"];
+      {PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.player_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      // uint32 limit = 2 [json_name = "limit"];
+      {PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.limit_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
+      // repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+      {PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.exclude_player_ids_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kPackedUInt64)},
+    }},
+    // no aux_entries
+    {{
+    }},
+  };
+}
+
+
+inline constexpr RecommendFriendsRequest::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        exclude_player_ids_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::friend_::v1::RecommendFriendsRequest,
+            PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.exclude_player_ids_)>()
+         }
+        ,
+        _exclude_player_ids_cached_byte_size_{0},
+        player_id_{::uint64_t{0u}},
+        limit_{0u} {}
+
+template <typename>
+constexpr RecommendFriendsRequest::RecommendFriendsRequest(::_pbi::ConstantInitialized,
+                       const ::_pbi::ClassData* PROTOBUF_NONNULL class_data)
+    : ::google::protobuf::Message(
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          class_data
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          ),
+      _impl_(internal_visibility(), ::_pbi::ConstantInitialized()) {
+}
+inline void* PROTOBUF_NONNULL RecommendFriendsRequest::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) RecommendFriendsRequest(arena);
+}
+constexpr auto RecommendFriendsRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(RecommendFriendsRequest), alignof(RecommendFriendsRequest));
+}
+constexpr auto RecommendFriendsRequest::InternalGenerateClassData_(
+    const MessageLite& prototype,
+    const ::google::protobuf::internal::TcParseTableBase* tc_table) {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &prototype,
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+          &_table_.header,
+#else
+          tc_table,
+#endif
+          nullptr,  // IsInitialized
+          &RecommendFriendsRequest::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<RecommendFriendsRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &RecommendFriendsRequest::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<RecommendFriendsRequest>(), &RecommendFriendsRequest::ByteSizeLong,
+              &RecommendFriendsRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_._cached_size_),
+          false,
+      },
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+      &file_reflection_data[22],
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+      &::_pbi::kDescriptorMethods,
+      &descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto,
+      nullptr,  // tracker
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  };
+}
+struct RecommendFriendsRequestGlobalsTypeInternal : ::_pbi::MessageGlobalsBase {
+  constexpr RecommendFriendsRequestGlobalsTypeInternal()
+      :
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+        _default(::_pbi::ConstantInitialized{},
+                 RecommendFriendsRequest_class_data_.base())
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+        MessageGlobalsBase(RecommendFriendsRequest::InternalGenerateClassData_(
+            _default, &RecommendFriendsRequest_globals_._table.header)),
+        _default(::_pbi::ConstantInitialized{}, GetClassData()),
+        _table(::_pbi::PrivateAccess::GenerateParseTable<RecommendFriendsRequest>(
+            GetClassData()))
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  {
+  }
+  ~RecommendFriendsRequestGlobalsTypeInternal() {}
+  union {
+    alignas(::_pbi::kMaxMessageAlignment) RecommendFriendsRequest _default;
+  };
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  decltype(::_pbi::PrivateAccess::GenerateParseTable<RecommendFriendsRequest>(
+      ::std::declval<const ::_pbi::ClassData*>())) _table;
+#endif
+};
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+static_assert(PROTOBUF_FIELD_OFFSET(RecommendFriendsRequestGlobalsTypeInternal, _default) ==
+              ::_pbi::MessageGlobalsBase::OffsetToDefault());
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PROTOBUF_MESSAGE_GLOBALS_CONST RecommendFriendsRequestGlobalsTypeInternal RecommendFriendsRequest_globals_
+        PROTOBUF_MESSAGE_GLOBALS_SECTION(.data.rel.ro);
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+namespace {
+const ::_pbi::ClassData* RecommendFriendsRequest_get_class_data() {
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  return RecommendFriendsRequest_globals_.GetClassData();
+#else
+  return RecommendFriendsRequest_class_data_.base();
 #endif  // PROTOBUF_MESSAGE_GLOBALS
 }
 }  // namespace
@@ -1834,7 +2178,7 @@ constexpr auto FriendEvent::InternalGenerateClassData_(
           false,
       },
 #ifdef PROTOBUF_MESSAGE_GLOBALS
-      &file_reflection_data[21],
+      &file_reflection_data[24],
 #else   // !PROTOBUF_MESSAGE_GLOBALS
       &::_pbi::kDescriptorMethods,
       &descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto,
@@ -2920,6 +3264,164 @@ const ::_pbi::ClassData* AcceptFriendRequest_get_class_data() {
 }
 }  // namespace
 #endif  // PROTOBUF_CUSTOM_VTABLE
+class RecommendFriendsResponse::_Internal {
+ public:
+  using HasBits = decltype(::std::declval<RecommendFriendsResponse>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_._has_bits_);
+};
+
+constexpr RecommendFriendsResponse::ParseTableT_ RecommendFriendsResponse::InternalGenerateParseTable_(const ::_pbi::ClassData* class_data) {
+  return ParseTableT_{
+    {
+      PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_._has_bits_),
+      0, // no _extensions_
+      2, 8,  // max_field_number, fast_idx_mask
+      offsetof(ParseTableT_, field_lookup_table),
+      4294967292,  // skipmap
+      offsetof(ParseTableT_, field_entries),
+      2,  // num_field_entries
+      1,  // num_aux_entries
+      offsetof(ParseTableT_, aux_entries),
+      class_data,
+      nullptr,  // post_loop_handler
+      ::_pbi::TcParser::GenericFallback,  // fallback
+      #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+      ::_pbi::TcParser::GetTable<::pandora::friend_::v1::RecommendFriendsResponse>(),  // to_prefetch
+      #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+    }, {{
+      // repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+      {::_pbi::TcParser::FastMtR1,
+       {18, 0, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_.recommendations_)}},
+      // .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(RecommendFriendsResponse, _impl_.code_), 1>(),
+       {8, 1, 0,
+        PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_.code_)}},
+    }}, {{
+      65535, 65535
+    }}, {{
+      // .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+      {PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_.code_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
+      // repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+      {PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_.recommendations_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    }},
+    {{
+        #ifndef PROTOBUF_MESSAGE_GLOBALS
+        {::_pbi::TcParser::GetTable<::pandora::friend_::v1::RecommendedFriendInfo>()},
+        #else
+        {::_pbi::FieldAuxMessageGlobals(), &::pandora::friend_::v1::RecommendedFriendInfo_globals_},
+        #endif
+    }},
+    {{
+    }},
+  };
+}
+
+
+inline constexpr RecommendFriendsResponse::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        recommendations_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::friend_::v1::RecommendFriendsResponse,
+            PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_.recommendations_)>()
+         }
+        ,
+        code_{static_cast< ::pandora::common::v1::ErrCode >(0)} {}
+
+template <typename>
+constexpr RecommendFriendsResponse::RecommendFriendsResponse(::_pbi::ConstantInitialized,
+                       const ::_pbi::ClassData* PROTOBUF_NONNULL class_data)
+    : ::google::protobuf::Message(
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          class_data
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          ),
+      _impl_(internal_visibility(), ::_pbi::ConstantInitialized()) {
+}
+inline void* PROTOBUF_NONNULL RecommendFriendsResponse::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) RecommendFriendsResponse(arena);
+}
+constexpr auto RecommendFriendsResponse::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(RecommendFriendsResponse), alignof(RecommendFriendsResponse));
+}
+constexpr auto RecommendFriendsResponse::InternalGenerateClassData_(
+    const MessageLite& prototype,
+    const ::google::protobuf::internal::TcParseTableBase* tc_table) {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &prototype,
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+          &_table_.header,
+#else
+          tc_table,
+#endif
+          nullptr,  // IsInitialized
+          &RecommendFriendsResponse::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<RecommendFriendsResponse>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &RecommendFriendsResponse::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<RecommendFriendsResponse>(), &RecommendFriendsResponse::ByteSizeLong,
+              &RecommendFriendsResponse::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(RecommendFriendsResponse, _impl_._cached_size_),
+          false,
+      },
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+      &file_reflection_data[23],
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+      &::_pbi::kDescriptorMethods,
+      &descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto,
+      nullptr,  // tracker
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  };
+}
+struct RecommendFriendsResponseGlobalsTypeInternal : ::_pbi::MessageGlobalsBase {
+  constexpr RecommendFriendsResponseGlobalsTypeInternal()
+      :
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+        _default(::_pbi::ConstantInitialized{},
+                 RecommendFriendsResponse_class_data_.base())
+#else   // !PROTOBUF_MESSAGE_GLOBALS
+        MessageGlobalsBase(RecommendFriendsResponse::InternalGenerateClassData_(
+            _default, &RecommendFriendsResponse_globals_._table.header)),
+        _default(::_pbi::ConstantInitialized{}, GetClassData()),
+        _table(::_pbi::PrivateAccess::GenerateParseTable<RecommendFriendsResponse>(
+            GetClassData()))
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+  {
+  }
+  ~RecommendFriendsResponseGlobalsTypeInternal() {}
+  union {
+    alignas(::_pbi::kMaxMessageAlignment) RecommendFriendsResponse _default;
+  };
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  decltype(::_pbi::PrivateAccess::GenerateParseTable<RecommendFriendsResponse>(
+      ::std::declval<const ::_pbi::ClassData*>())) _table;
+#endif
+};
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+static_assert(PROTOBUF_FIELD_OFFSET(RecommendFriendsResponseGlobalsTypeInternal, _default) ==
+              ::_pbi::MessageGlobalsBase::OffsetToDefault());
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PROTOBUF_MESSAGE_GLOBALS_CONST RecommendFriendsResponseGlobalsTypeInternal RecommendFriendsResponse_globals_
+        PROTOBUF_MESSAGE_GLOBALS_SECTION(.data.rel.ro);
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+namespace {
+const ::_pbi::ClassData* RecommendFriendsResponse_get_class_data() {
+#ifdef PROTOBUF_MESSAGE_GLOBALS
+  return RecommendFriendsResponse_globals_.GetClassData();
+#else
+  return RecommendFriendsResponse_class_data_.base();
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+}
+}  // namespace
+#endif  // PROTOBUF_CUSTOM_VTABLE
 class ListFriendsResponse::_Internal {
  public:
   using HasBits = decltype(::std::declval<ListFriendsResponse>()._impl_._has_bits_);
@@ -3548,6 +4050,35 @@ const ::uint32_t
         1,
         0,
         0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_._has_bits_),
+        8, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_.player_id_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_.nickname_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_.is_online_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_.last_seen_ms_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendedFriendInfo, _impl_.mutual_friend_count_),
+        1,
+        0,
+        3,
+        2,
+        4,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_._has_bits_),
+        6, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.player_id_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.limit_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.exclude_player_ids_),
+        1,
+        2,
+        0,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_._has_bits_),
+        5, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_.code_),
+        PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_.recommendations_),
+        1,
+        0,
+        0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::FriendEvent, _impl_._has_bits_),
         8, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::FriendEvent, _impl_.by_player_id_),
@@ -3585,7 +4116,10 @@ static const ::_pbi::MigrationSchema
         {122, sizeof(::pandora::friend_::v1::BlockInfo)},
         {131, sizeof(::pandora::friend_::v1::ListBlocksRequest)},
         {136, sizeof(::pandora::friend_::v1::ListBlocksResponse)},
-        {143, sizeof(::pandora::friend_::v1::FriendEvent)},
+        {143, sizeof(::pandora::friend_::v1::RecommendedFriendInfo)},
+        {156, sizeof(::pandora::friend_::v1::RecommendFriendsRequest)},
+        {165, sizeof(::pandora::friend_::v1::RecommendFriendsResponse)},
+        {172, sizeof(::pandora::friend_::v1::FriendEvent)},
 };
 static const ::_pbi::MessageGlobalsBase* PROTOBUF_NONNULL const
     file_message_globals[] = {
@@ -3610,6 +4144,9 @@ static const ::_pbi::MessageGlobalsBase* PROTOBUF_NONNULL const
         &::pandora::friend_::v1::BlockInfo_globals_,
         &::pandora::friend_::v1::ListBlocksRequest_globals_,
         &::pandora::friend_::v1::ListBlocksResponse_globals_,
+        &::pandora::friend_::v1::RecommendedFriendInfo_globals_,
+        &::pandora::friend_::v1::RecommendFriendsRequest_globals_,
+        &::pandora::friend_::v1::RecommendFriendsResponse_globals_,
         &::pandora::friend_::v1::FriendEvent_globals_,
 };
 const char descriptor_table_protodef_pandora_2ffriend_2fv1_2ffriend_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
@@ -3664,43 +4201,57 @@ const char descriptor_table_protodef_pandora_2ffriend_2fv1_2ffriend_2eproto[] AB
     "\022\033\n\tplayer_id\030\001 \001(\004R\010playerId\"z\n\022ListBlo"
     "cksResponse\022.\n\004code\030\001 \001(\0162\032.pandora.comm"
     "on.v1.ErrCodeR\004code\0224\n\006blocks\030\002 \003(\0132\034.pa"
-    "ndora.friend.v1.BlockInfoR\006blocks\"\303\001\n\013Fr"
-    "iendEvent\022 \n\014by_player_id\030\001 \001(\004R\nbyPlaye"
-    "rId\022 \n\014to_player_id\030\002 \001(\004R\ntoPlayerId\022\035\n"
-    "\nrequest_id\030\003 \001(\004R\trequestId\022<\n\006reason\030\004"
-    " \001(\0162$.pandora.friend.v1.FriendEventReas"
-    "onR\006reason\022\023\n\005ts_ms\030\005 \001(\003R\004tsMs*\312\001\n\023Frie"
-    "ndRequestStatus\022%\n!FRIEND_REQUEST_STATUS"
-    "_UNSPECIFIED\020\000\022!\n\035FRIEND_REQUEST_STATUS_"
-    "PENDING\020\001\022\"\n\036FRIEND_REQUEST_STATUS_ACCEP"
-    "TED\020\002\022\"\n\036FRIEND_REQUEST_STATUS_REJECTED\020"
-    "\003\022!\n\035FRIEND_REQUEST_STATUS_EXPIRED\020\004*\214\001\n"
-    "\021FriendEventReason\022#\n\037FRIEND_EVENT_REASO"
-    "N_UNSPECIFIED\020\000\022(\n$FRIEND_EVENT_REASON_R"
-    "EQUEST_RECEIVED\020\001\022(\n$FRIEND_EVENT_REASON"
-    "_REQUEST_ACCEPTED\020\0022\324\006\n\rFriendService\022V\n"
-    "\tAddFriend\022#.pandora.friend.v1.AddFriend"
-    "Request\032$.pandora.friend.v1.AddFriendRes"
-    "ponse\022_\n\014AcceptFriend\022&.pandora.friend.v"
-    "1.AcceptFriendRequest\032\'.pandora.friend.v"
-    "1.AcceptFriendResponse\022_\n\014RejectFriend\022&"
-    ".pandora.friend.v1.RejectFriendRequest\032\'"
-    ".pandora.friend.v1.RejectFriendResponse\022"
-    "q\n\022ListFriendRequests\022,.pandora.friend.v"
-    "1.ListFriendRequestsRequest\032-.pandora.fr"
-    "iend.v1.ListFriendRequestsResponse\022\\\n\013Li"
-    "stFriends\022%.pandora.friend.v1.ListFriend"
-    "sRequest\032&.pandora.friend.v1.ListFriends"
-    "Response\022_\n\014RemoveFriend\022&.pandora.frien"
-    "d.v1.RemoveFriendRequest\032\'.pandora.frien"
-    "d.v1.RemoveFriendResponse\022J\n\005Block\022\037.pan"
-    "dora.friend.v1.BlockRequest\032 .pandora.fr"
-    "iend.v1.BlockResponse\022P\n\007Unblock\022!.pando"
-    "ra.friend.v1.UnblockRequest\032\".pandora.fr"
-    "iend.v1.UnblockResponse\022Y\n\nListBlocks\022$."
-    "pandora.friend.v1.ListBlocksRequest\032%.pa"
-    "ndora.friend.v1.ListBlocksResponseb\006prot"
-    "o3"
+    "ndora.friend.v1.BlockInfoR\006blocks\"\277\001\n\025Re"
+    "commendedFriendInfo\022\033\n\tplayer_id\030\001 \001(\004R\010"
+    "playerId\022\032\n\010nickname\030\002 \001(\tR\010nickname\022\033\n\t"
+    "is_online\030\003 \001(\010R\010isOnline\022 \n\014last_seen_m"
+    "s\030\004 \001(\003R\nlastSeenMs\022.\n\023mutual_friend_cou"
+    "nt\030\005 \001(\rR\021mutualFriendCount\"z\n\027Recommend"
+    "FriendsRequest\022\033\n\tplayer_id\030\001 \001(\004R\010playe"
+    "rId\022\024\n\005limit\030\002 \001(\rR\005limit\022,\n\022exclude_pla"
+    "yer_ids\030\003 \003(\004R\020excludePlayerIds\"\236\001\n\030Reco"
+    "mmendFriendsResponse\022.\n\004code\030\001 \001(\0162\032.pan"
+    "dora.common.v1.ErrCodeR\004code\022R\n\017recommen"
+    "dations\030\002 \003(\0132(.pandora.friend.v1.Recomm"
+    "endedFriendInfoR\017recommendations\"\303\001\n\013Fri"
+    "endEvent\022 \n\014by_player_id\030\001 \001(\004R\nbyPlayer"
+    "Id\022 \n\014to_player_id\030\002 \001(\004R\ntoPlayerId\022\035\n\n"
+    "request_id\030\003 \001(\004R\trequestId\022<\n\006reason\030\004 "
+    "\001(\0162$.pandora.friend.v1.FriendEventReaso"
+    "nR\006reason\022\023\n\005ts_ms\030\005 \001(\003R\004tsMs*\312\001\n\023Frien"
+    "dRequestStatus\022%\n!FRIEND_REQUEST_STATUS_"
+    "UNSPECIFIED\020\000\022!\n\035FRIEND_REQUEST_STATUS_P"
+    "ENDING\020\001\022\"\n\036FRIEND_REQUEST_STATUS_ACCEPT"
+    "ED\020\002\022\"\n\036FRIEND_REQUEST_STATUS_REJECTED\020\003"
+    "\022!\n\035FRIEND_REQUEST_STATUS_EXPIRED\020\004*\214\001\n\021"
+    "FriendEventReason\022#\n\037FRIEND_EVENT_REASON"
+    "_UNSPECIFIED\020\000\022(\n$FRIEND_EVENT_REASON_RE"
+    "QUEST_RECEIVED\020\001\022(\n$FRIEND_EVENT_REASON_"
+    "REQUEST_ACCEPTED\020\0022\301\007\n\rFriendService\022V\n\t"
+    "AddFriend\022#.pandora.friend.v1.AddFriendR"
+    "equest\032$.pandora.friend.v1.AddFriendResp"
+    "onse\022_\n\014AcceptFriend\022&.pandora.friend.v1"
+    ".AcceptFriendRequest\032\'.pandora.friend.v1"
+    ".AcceptFriendResponse\022_\n\014RejectFriend\022&."
+    "pandora.friend.v1.RejectFriendRequest\032\'."
+    "pandora.friend.v1.RejectFriendResponse\022q"
+    "\n\022ListFriendRequests\022,.pandora.friend.v1"
+    ".ListFriendRequestsRequest\032-.pandora.fri"
+    "end.v1.ListFriendRequestsResponse\022\\\n\013Lis"
+    "tFriends\022%.pandora.friend.v1.ListFriends"
+    "Request\032&.pandora.friend.v1.ListFriendsR"
+    "esponse\022_\n\014RemoveFriend\022&.pandora.friend"
+    ".v1.RemoveFriendRequest\032\'.pandora.friend"
+    ".v1.RemoveFriendResponse\022J\n\005Block\022\037.pand"
+    "ora.friend.v1.BlockRequest\032 .pandora.fri"
+    "end.v1.BlockResponse\022P\n\007Unblock\022!.pandor"
+    "a.friend.v1.UnblockRequest\032\".pandora.fri"
+    "end.v1.UnblockResponse\022Y\n\nListBlocks\022$.p"
+    "andora.friend.v1.ListBlocksRequest\032%.pan"
+    "dora.friend.v1.ListBlocksResponse\022k\n\020Rec"
+    "ommendFriends\022*.pandora.friend.v1.Recomm"
+    "endFriendsRequest\032+.pandora.friend.v1.Re"
+    "commendFriendsResponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
     descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto_deps[1] = {
@@ -3710,13 +4261,13 @@ static ::absl::once_flag descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto = {
     false,
     false,
-    3442,
+    4030,
     descriptor_table_protodef_pandora_2ffriend_2fv1_2ffriend_2eproto,
     "pandora/friend/v1/friend.proto",
     &descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto_once,
     descriptor_table_pandora_2ffriend_2fv1_2ffriend_2eproto_deps,
     1,
-    22,
+    25,
     schemas,
     file_message_globals,
     TableStruct_pandora_2ffriend_2fv1_2ffriend_2eproto::offsets,
@@ -8504,6 +9055,866 @@ void ListBlocksResponse::InternalSwap(ListBlocksResponse* PROTOBUF_RESTRICT PROT
 }
 
 ::google::protobuf::Metadata ListBlocksResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+RecommendedFriendInfo::RecommendedFriendInfo(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendedFriendInfo_get_class_data()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:pandora.friend.v1.RecommendedFriendInfo)
+}
+PROTOBUF_NDEBUG_INLINE RecommendedFriendInfo::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    [[maybe_unused]] const ::pandora::friend_::v1::RecommendedFriendInfo& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        nickname_(arena, from.nickname_) {}
+
+RecommendedFriendInfo::RecommendedFriendInfo(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const RecommendedFriendInfo& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendedFriendInfo_get_class_data()) {
+
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  RecommendedFriendInfo* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, player_id_),
+           reinterpret_cast<const char*>(&from._impl_) +
+               offsetof(Impl_, player_id_),
+           offsetof(Impl_, mutual_friend_count_) -
+               offsetof(Impl_, player_id_) +
+               sizeof(Impl_::mutual_friend_count_));
+
+  // @@protoc_insertion_point(copy_constructor:pandora.friend.v1.RecommendedFriendInfo)
+}
+PROTOBUF_NDEBUG_INLINE RecommendedFriendInfo::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        nickname_(arena) {}
+
+inline void RecommendedFriendInfo::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, player_id_),
+           0,
+           offsetof(Impl_, mutual_friend_count_) -
+               offsetof(Impl_, player_id_) +
+               sizeof(Impl_::mutual_friend_count_));
+}
+RecommendedFriendInfo::~RecommendedFriendInfo() {
+  // @@protoc_insertion_point(destructor:pandora.friend.v1.RecommendedFriendInfo)
+  SharedDtor(*this);
+}
+inline void RecommendedFriendInfo::SharedDtor(MessageLite& self) {
+  RecommendedFriendInfo& this_ = static_cast<RecommendedFriendInfo&>(self);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.nickname_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull RecommendedFriendInfo_class_data_ =
+        RecommendedFriendInfo::InternalGenerateClassData_(RecommendedFriendInfo_globals_._default);
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendedFriendInfo::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendedFriendInfo_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(RecommendedFriendInfo_class_data_.tc_table);
+  return RecommendedFriendInfo_class_data_.base();
+}
+#else
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendedFriendInfo::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendedFriendInfo_globals_);
+  ::google::protobuf::internal::PrefetchToLocalCache(
+      ::google::protobuf::internal::MessageGlobalsBase::ToParseTableBase(&RecommendedFriendInfo_globals_));
+  return RecommendedFriendInfo_globals_.GetClassData();
+}
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const RecommendedFriendInfo::ParseTableT_
+    RecommendedFriendInfo::_table_ =
+        RecommendedFriendInfo::InternalGenerateParseTable_(RecommendedFriendInfo_class_data_.base());
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_NOINLINE void RecommendedFriendInfo::Clear() {
+// @@protoc_insertion_point(message_clear_start:pandora.friend.v1.RecommendedFriendInfo)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    _impl_.nickname_.ClearNonDefaultToEmpty();
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001eU)) {
+    ::memset(&_impl_.player_id_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.mutual_friend_count_) -
+        reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.mutual_friend_count_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL RecommendedFriendInfo::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const RecommendedFriendInfo& this_ = static_cast<const RecommendedFriendInfo&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL RecommendedFriendInfo::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const RecommendedFriendInfo& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(serialize_to_array_start:pandora.friend.v1.RecommendedFriendInfo)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = this_._impl_._has_bits_[0];
+  // uint64 player_id = 1 [json_name = "playerId"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (this_._internal_player_id() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+          1, this_._internal_player_id(), target);
+    }
+  }
+
+  // string nickname = 2 [json_name = "nickname"];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    if (!this_._internal_nickname().empty()) {
+      const ::std::string& _s = this_._internal_nickname();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "pandora.friend.v1.RecommendedFriendInfo.nickname");
+      target = stream->WriteStringMaybeAliased(2, _s, target);
+    }
+  }
+
+  // bool is_online = 3 [json_name = "isOnline"];
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (this_._internal_is_online() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteBoolToArray(
+          3, this_._internal_is_online(), target);
+    }
+  }
+
+  // int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (this_._internal_last_seen_ms() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<4>(
+              stream, this_._internal_last_seen_ms(), target);
+    }
+  }
+
+  // uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (this_._internal_mutual_friend_count() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
+          5, this_._internal_mutual_friend_count(), target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:pandora.friend.v1.RecommendedFriendInfo)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t RecommendedFriendInfo::ByteSizeLong(const MessageLite& base) {
+  const RecommendedFriendInfo& this_ = static_cast<const RecommendedFriendInfo&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t RecommendedFriendInfo::ByteSizeLong() const {
+  const RecommendedFriendInfo& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:pandora.friend.v1.RecommendedFriendInfo)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
+    // string nickname = 2 [json_name = "nickname"];
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      if (!this_._internal_nickname().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_nickname());
+      }
+    }
+    // uint64 player_id = 1 [json_name = "playerId"];
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (this_._internal_player_id() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+            this_._internal_player_id());
+      }
+    }
+    // int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (this_._internal_last_seen_ms() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+            this_._internal_last_seen_ms());
+      }
+    }
+    // bool is_online = 3 [json_name = "isOnline"];
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      if (this_._internal_is_online() != 0) {
+        total_size += 2;
+      }
+    }
+    // uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+      if (this_._internal_mutual_friend_count() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
+            this_._internal_mutual_friend_count());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void RecommendedFriendInfo::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<RecommendedFriendInfo*>(&to_msg);
+  auto& from = static_cast<const RecommendedFriendInfo&>(from_msg);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    from.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(class_specific_merge_from_start:pandora.friend.v1.RecommendedFriendInfo)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      if (!from._internal_nickname().empty()) {
+        _this->_internal_set_nickname(from._internal_nickname());
+      } else {
+        if (_this->_impl_.nickname_.IsDefault()) {
+          _this->_internal_set_nickname("");
+        }
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (from._internal_player_id() != 0) {
+        _this->_impl_.player_id_ = from._impl_.player_id_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (from._internal_last_seen_ms() != 0) {
+        _this->_impl_.last_seen_ms_ = from._impl_.last_seen_ms_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+      if (from._internal_is_online() != 0) {
+        _this->_impl_.is_online_ = from._impl_.is_online_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+      if (from._internal_mutual_friend_count() != 0) {
+        _this->_impl_.mutual_friend_count_ = from._impl_.mutual_friend_count_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+
+void RecommendedFriendInfo::CopyFrom(const RecommendedFriendInfo& from) {
+  // @@protoc_insertion_point(class_specific_copy_from_start:pandora.friend.v1.RecommendedFriendInfo)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void RecommendedFriendInfo::InternalSwap(RecommendedFriendInfo* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.nickname_, &other->_impl_.nickname_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.mutual_friend_count_)
+      + sizeof(RecommendedFriendInfo::_impl_.mutual_friend_count_)
+      - PROTOBUF_FIELD_OFFSET(RecommendedFriendInfo, _impl_.player_id_)>(
+          reinterpret_cast<char*>(&_impl_.player_id_),
+          reinterpret_cast<char*>(&other->_impl_.player_id_));
+}
+
+::google::protobuf::Metadata RecommendedFriendInfo::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+RecommendFriendsRequest::RecommendFriendsRequest(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendFriendsRequest_get_class_data()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:pandora.friend.v1.RecommendFriendsRequest)
+}
+PROTOBUF_NDEBUG_INLINE RecommendFriendsRequest::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    [[maybe_unused]] const ::pandora::friend_::v1::RecommendFriendsRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        exclude_player_ids_ {
+          visibility, ::_pbi::InternalMetadataOffset::Build<
+              ::pandora::friend_::v1::RecommendFriendsRequest,
+              PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.exclude_player_ids_)>()
+          , from.exclude_player_ids_
+        }
+        ,
+        _exclude_player_ids_cached_byte_size_{0} {}
+
+RecommendFriendsRequest::RecommendFriendsRequest(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const RecommendFriendsRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendFriendsRequest_get_class_data()) {
+
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  RecommendFriendsRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, player_id_),
+           reinterpret_cast<const char*>(&from._impl_) +
+               offsetof(Impl_, player_id_),
+           offsetof(Impl_, limit_) -
+               offsetof(Impl_, player_id_) +
+               sizeof(Impl_::limit_));
+
+  // @@protoc_insertion_point(copy_constructor:pandora.friend.v1.RecommendFriendsRequest)
+}
+PROTOBUF_NDEBUG_INLINE RecommendFriendsRequest::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        exclude_player_ids_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::friend_::v1::RecommendFriendsRequest,
+            PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsRequest, _impl_.exclude_player_ids_)>()
+         }
+        ,
+        _exclude_player_ids_cached_byte_size_{0} {}
+
+inline void RecommendFriendsRequest::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, player_id_),
+           0,
+           offsetof(Impl_, limit_) -
+               offsetof(Impl_, player_id_) +
+               sizeof(Impl_::limit_));
+}
+RecommendFriendsRequest::~RecommendFriendsRequest() {
+  // @@protoc_insertion_point(destructor:pandora.friend.v1.RecommendFriendsRequest)
+  SharedDtor(*this);
+}
+inline void RecommendFriendsRequest::SharedDtor(MessageLite& self) {
+  RecommendFriendsRequest& this_ = static_cast<RecommendFriendsRequest&>(self);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull RecommendFriendsRequest_class_data_ =
+        RecommendFriendsRequest::InternalGenerateClassData_(RecommendFriendsRequest_globals_._default);
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendFriendsRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendFriendsRequest_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(RecommendFriendsRequest_class_data_.tc_table);
+  return RecommendFriendsRequest_class_data_.base();
+}
+#else
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendFriendsRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendFriendsRequest_globals_);
+  ::google::protobuf::internal::PrefetchToLocalCache(
+      ::google::protobuf::internal::MessageGlobalsBase::ToParseTableBase(&RecommendFriendsRequest_globals_));
+  return RecommendFriendsRequest_globals_.GetClassData();
+}
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const RecommendFriendsRequest::ParseTableT_
+    RecommendFriendsRequest::_table_ =
+        RecommendFriendsRequest::InternalGenerateParseTable_(RecommendFriendsRequest_class_data_.base());
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_NOINLINE void RecommendFriendsRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:pandora.friend.v1.RecommendFriendsRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    _impl_.exclude_player_ids_.Clear();
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000006U)) {
+    ::memset(&_impl_.player_id_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.limit_) -
+        reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.limit_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL RecommendFriendsRequest::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const RecommendFriendsRequest& this_ = static_cast<const RecommendFriendsRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL RecommendFriendsRequest::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const RecommendFriendsRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(serialize_to_array_start:pandora.friend.v1.RecommendFriendsRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = this_._impl_._has_bits_[0];
+  // uint64 player_id = 1 [json_name = "playerId"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (this_._internal_player_id() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+          1, this_._internal_player_id(), target);
+    }
+  }
+
+  // uint32 limit = 2 [json_name = "limit"];
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (this_._internal_limit() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
+          2, this_._internal_limit(), target);
+    }
+  }
+
+  // repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    {
+      int byte_size = this_._impl_._exclude_player_ids_cached_byte_size_.Get();
+      if (byte_size > 0) {
+        target = stream->WriteUInt64Packed(
+            3, this_._internal_exclude_player_ids(), byte_size, target);
+      }
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:pandora.friend.v1.RecommendFriendsRequest)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t RecommendFriendsRequest::ByteSizeLong(const MessageLite& base) {
+  const RecommendFriendsRequest& this_ = static_cast<const RecommendFriendsRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t RecommendFriendsRequest::ByteSizeLong() const {
+  const RecommendFriendsRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:pandora.friend.v1.RecommendFriendsRequest)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+    // repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      total_size +=
+          ::_pbi::WireFormatLite::UInt64SizeWithPackedTagSize(
+              this_._internal_exclude_player_ids(), 1,
+              this_._impl_._exclude_player_ids_cached_byte_size_);
+    }
+    // uint64 player_id = 1 [json_name = "playerId"];
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (this_._internal_player_id() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+            this_._internal_player_id());
+      }
+    }
+    // uint32 limit = 2 [json_name = "limit"];
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (this_._internal_limit() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
+            this_._internal_limit());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void RecommendFriendsRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<RecommendFriendsRequest*>(&to_msg);
+  auto& from = static_cast<const RecommendFriendsRequest&>(from_msg);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    from.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(class_specific_merge_from_start:pandora.friend.v1.RecommendFriendsRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x00000007U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      _this->_internal_mutable_exclude_player_ids()->MergeFrom(from._internal_exclude_player_ids());
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (from._internal_player_id() != 0) {
+        _this->_impl_.player_id_ = from._impl_.player_id_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+      if (from._internal_limit() != 0) {
+        _this->_impl_.limit_ = from._impl_.limit_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+
+void RecommendFriendsRequest::CopyFrom(const RecommendFriendsRequest& from) {
+  // @@protoc_insertion_point(class_specific_copy_from_start:pandora.friend.v1.RecommendFriendsRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void RecommendFriendsRequest::InternalSwap(RecommendFriendsRequest* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  _impl_.exclude_player_ids_.InternalSwap(&other->_impl_.exclude_player_ids_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.limit_)
+      + sizeof(RecommendFriendsRequest::_impl_.limit_)
+      - PROTOBUF_FIELD_OFFSET(RecommendFriendsRequest, _impl_.player_id_)>(
+          reinterpret_cast<char*>(&_impl_.player_id_),
+          reinterpret_cast<char*>(&other->_impl_.player_id_));
+}
+
+::google::protobuf::Metadata RecommendFriendsRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+RecommendFriendsResponse::RecommendFriendsResponse(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendFriendsResponse_get_class_data()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:pandora.friend.v1.RecommendFriendsResponse)
+}
+PROTOBUF_NDEBUG_INLINE RecommendFriendsResponse::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    [[maybe_unused]] const ::pandora::friend_::v1::RecommendFriendsResponse& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        recommendations_ {
+          visibility, ::_pbi::InternalMetadataOffset::Build<
+              ::pandora::friend_::v1::RecommendFriendsResponse,
+              PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_.recommendations_)>()
+          , from.recommendations_
+        }
+     {}
+
+RecommendFriendsResponse::RecommendFriendsResponse(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const RecommendFriendsResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, RecommendFriendsResponse_get_class_data()) {
+
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  RecommendFriendsResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  _impl_.code_ = from._impl_.code_;
+
+  // @@protoc_insertion_point(copy_constructor:pandora.friend.v1.RecommendFriendsResponse)
+}
+PROTOBUF_NDEBUG_INLINE RecommendFriendsResponse::Impl_::Impl_(
+    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
+    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        recommendations_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::friend_::v1::RecommendFriendsResponse,
+            PROTOBUF_FIELD_OFFSET(::pandora::friend_::v1::RecommendFriendsResponse, _impl_.recommendations_)>()
+         }
+     {}
+
+inline void RecommendFriendsResponse::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.code_ = {};
+}
+RecommendFriendsResponse::~RecommendFriendsResponse() {
+  // @@protoc_insertion_point(destructor:pandora.friend.v1.RecommendFriendsResponse)
+  SharedDtor(*this);
+}
+inline void RecommendFriendsResponse::SharedDtor(MessageLite& self) {
+  RecommendFriendsResponse& this_ = static_cast<RecommendFriendsResponse&>(self);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull RecommendFriendsResponse_class_data_ =
+        RecommendFriendsResponse::InternalGenerateClassData_(RecommendFriendsResponse_globals_._default);
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendFriendsResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendFriendsResponse_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(RecommendFriendsResponse_class_data_.tc_table);
+  return RecommendFriendsResponse_class_data_.base();
+}
+#else
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+RecommendFriendsResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&RecommendFriendsResponse_globals_);
+  ::google::protobuf::internal::PrefetchToLocalCache(
+      ::google::protobuf::internal::MessageGlobalsBase::ToParseTableBase(&RecommendFriendsResponse_globals_));
+  return RecommendFriendsResponse_globals_.GetClassData();
+}
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const RecommendFriendsResponse::ParseTableT_
+    RecommendFriendsResponse::_table_ =
+        RecommendFriendsResponse::InternalGenerateParseTable_(RecommendFriendsResponse_class_data_.base());
+#endif  // !PROTOBUF_MESSAGE_GLOBALS
+PROTOBUF_NOINLINE void RecommendFriendsResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:pandora.friend.v1.RecommendFriendsResponse)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    _impl_.recommendations_.Clear();
+  }
+  _impl_.code_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL RecommendFriendsResponse::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const RecommendFriendsResponse& this_ = static_cast<const RecommendFriendsResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL RecommendFriendsResponse::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const RecommendFriendsResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    this_.CheckHasBitConsistency();
+  }
+  // @@protoc_insertion_point(serialize_to_array_start:pandora.friend.v1.RecommendFriendsResponse)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = this_._impl_._has_bits_[0];
+  // .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (this_._internal_code() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteEnumToArray(
+          1, this_._internal_code(), target);
+    }
+  }
+
+  // repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+    for (unsigned i = 0, n = static_cast<unsigned>(
+                             this_._internal_recommendations_size());
+         i < n; i++) {
+      const auto& repfield = this_._internal_recommendations().Get(i);
+      target =
+          ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+              2, repfield, repfield.GetCachedSize(),
+              target, stream);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:pandora.friend.v1.RecommendFriendsResponse)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t RecommendFriendsResponse::ByteSizeLong(const MessageLite& base) {
+  const RecommendFriendsResponse& this_ = static_cast<const RecommendFriendsResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t RecommendFriendsResponse::ByteSizeLong() const {
+  const RecommendFriendsResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:pandora.friend.v1.RecommendFriendsResponse)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    // repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      total_size += 1UL * this_._internal_recommendations_size();
+      for (const auto& msg : this_._internal_recommendations()) {
+        total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+      }
+    }
+    // .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (this_._internal_code() != 0) {
+        total_size += 1 +
+                      ::_pbi::WireFormatLite::EnumSize(this_._internal_code());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void RecommendFriendsResponse::MergeImpl(::google::protobuf::MessageLite& to_msg,
+                      const ::google::protobuf::MessageLite& from_msg) {
+   auto* const _this = static_cast<RecommendFriendsResponse*>(&to_msg);
+  auto& from = static_cast<const RecommendFriendsResponse&>(from_msg);
+  if constexpr (::_pbi::DebugHardenCheckHasBitConsistency()) {
+    from.CheckHasBitConsistency();
+  }
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:pandora.friend.v1.RecommendFriendsResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      _this->_internal_mutable_recommendations()->InternalMergeFromWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), arena,
+          from._internal_recommendations());
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (from._internal_code() != 0) {
+        _this->_impl_.code_ = from._impl_.code_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+
+void RecommendFriendsResponse::CopyFrom(const RecommendFriendsResponse& from) {
+  // @@protoc_insertion_point(class_specific_copy_from_start:pandora.friend.v1.RecommendFriendsResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void RecommendFriendsResponse::InternalSwap(RecommendFriendsResponse* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  _impl_.recommendations_.InternalSwap(&other->_impl_.recommendations_);
+  swap(_impl_.code_, other->_impl_.code_);
+}
+
+::google::protobuf::Metadata RecommendFriendsResponse::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================

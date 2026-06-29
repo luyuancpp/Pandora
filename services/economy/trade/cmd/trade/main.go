@@ -28,6 +28,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/config"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	plog "github.com/luyuancpp/pandora/pkg/log"
@@ -119,21 +120,34 @@ func main() {
 		helper.Warnw("msg", "kafka_brokers_empty", "hint", "trade audit disabled")
 	}
 
-	// 6. ResourceLedger:真实背包 / 货币原子结算账本接入前为占位实现(NoopResourceLedger)。
-	// 默认 fail-fast:未显式 allow_noop_ledger=true 即拒绝以「成交不扣减资产」静默启动
-	// (审计:trade 静默 Noop 结算降级);仅联调 / 单测显式开 allow_noop_ledger。
-	if !cfg.Trade.AllowNoopLedger {
+	// 6. ResourceLedger:优先接真实 inventory P2P 原子对转(GrpcResourceLedger);
+	// 配 trade.inventory_addr → 直连 inventory;未配且 allow_noop_ledger=true → 退回 NoopResourceLedger;
+	// 都没有 → fail-fast,拒绝以「成交不扣减资产」静默启动(审计:trade 静默 Noop 结算降级)。
+	var ledger biz.ResourceLedger
+	if cfg.Trade.InventoryAddr != "" {
+		grpcLedger := data.NewGrpcResourceLedger(cfg.Trade.InventoryAddr)
+		defer func() { _ = grpcLedger.Close() }()
+		ledger = grpcLedger
+		helper.Infow("msg", "resource_ledger_grpc", "inventory_addr", cfg.Trade.InventoryAddr)
+	} else if cfg.Trade.AllowNoopLedger {
+		helper.Warnw("msg", "resource_ledger_noop",
+			"hint", "trade 结算走 NoopResourceLedger(总成功,不真实扣转背包/货币);仅限联调/单测")
+		ledger = biz.NoopResourceLedger{}
+	} else {
 		helper.Errorw("msg", "resource_ledger_not_configured",
-			"hint", "真实资源账本(inventory P2P 原子对转)尚未接入;联调/单测请显式设 trade.allow_noop_ledger=true,生产不可空跑")
+			"hint", "设 trade.inventory_addr 接真实 inventory P2P 原子对转;联调/单测可显式设 trade.allow_noop_ledger=true,生产不可空跑")
 		os.Exit(1)
 	}
-	helper.Warnw("msg", "resource_ledger_noop",
-		"hint", "trade 结算走 NoopResourceLedger(总成功,不真实扣转背包/货币);仅限联调/单测")
-	ledger := biz.NoopResourceLedger{}
 
 	// 7. 装配链
 	repo := data.NewRedisTradeRepo(rdb)
 	uc := biz.NewTradeUsecase(repo, ledger, audit, sf, cfg.Trade)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewTradeService(uc)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

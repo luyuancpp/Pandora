@@ -1,0 +1,142 @@
+// Pandora GroupService 协议(2026-06-27)。
+//
+// 职责(docs/design/decision-revisit-chat-group.md):临时群组成员管理,支撑临时群聊频道。
+// 玩家自建的临时群,可拉人 / 退群 / 解散;成员可多归属(一个玩家可在多个群)。
+// 与公会(单归属、长期、有职位审批)区分:群组轻量、临时、只有群主 / 成员两级。
+//
+// 数据落地:pandora_social 库(chat_groups / chat_group_members),
+// 结构化列直接映射 proto 字段(CLAUDE.md §5.9 关系型表不强制 proto 化 blob)。
+// 群聊即时频道,不落库;成员变更暂不单独推送(MVP),由客户端拉 ListMyGroups 兜底。
+//
+// 与 GuildService 同进程提供(services/social/guild),但 proto package 独立,互不耦合。
+
+syntax = "proto3";
+
+package pandora.group.v1;
+
+import "pandora/common/v1/errcode.proto";
+
+service GroupService {
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc InviteToGroup(InviteToGroupRequest) returns (InviteToGroupResponse);
+  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+  rpc KickFromGroup(KickFromGroupRequest) returns (KickFromGroupResponse);
+  rpc DisbandGroup(DisbandGroupRequest) returns (DisbandGroupResponse);
+  rpc TransferOwner(TransferOwnerRequest) returns (TransferOwnerResponse);
+  rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
+  rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
+  rpc ListMyGroups(ListMyGroupsRequest) returns (ListMyGroupsResponse);
+}
+
+// 群组职位(enum 底层 int32,不属 ID 规则,CLAUDE.md §5.7)。
+enum GroupRole {
+  GROUP_ROLE_UNSPECIFIED = 0;
+  GROUP_ROLE_OWNER       = 1;  // 群主:拉人 / 踢人 / 解散 / 转让
+  GROUP_ROLE_MEMBER      = 2;  // 成员:聊天 / 退群
+}
+
+// GroupMember 是客户端可见的群成员视图(CLAUDE.md §5.8)。
+// nickname 留空,由客户端按 player_id 解析显示名(§5.8 最小数据单位)。
+message GroupMember {
+  uint64    player_id = 1;
+  string    nickname  = 2;
+  GroupRole role      = 3;
+  int64     joined_ms = 4;
+}
+
+// Group 是客户端可见的群视图(CLAUDE.md §5.8)。
+message Group {
+  uint64 group_id     = 1;
+  string name         = 2;
+  uint64 owner_id     = 3;
+  int32  member_count = 4;
+  int32  max_members  = 5;
+  int64  created_ms   = 6;
+}
+
+message CreateGroupRequest {
+  // player_id 由服务端以 JWT ctx 为准覆盖(R5),请求体可不填。建群者成为 OWNER。
+  uint64 player_id = 1;
+  string name      = 2;
+  repeated uint64 member_ids = 3;  // 初始成员(可选,含建群者外的玩家;总数 ≤ 上限)
+}
+
+message CreateGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+  uint64 group_id = 2;  // snowflake(uint64,不变量 §9.11)
+}
+
+message InviteToGroupRequest {
+  uint64 player_id = 1;  // 操作人(JWT ctx 覆盖),须群成员
+  uint64 group_id  = 2;
+  uint64 target_id = 3;  // 被拉入的玩家
+}
+
+message InviteToGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message LeaveGroupRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖;OWNER 退群须先转让或解散
+  uint64 group_id  = 2;
+}
+
+message LeaveGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message KickFromGroupRequest {
+  uint64 player_id = 1;  // 群主(JWT ctx 覆盖)
+  uint64 group_id  = 2;
+  uint64 target_id = 3;
+}
+
+message KickFromGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message DisbandGroupRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖;仅 OWNER
+  uint64 group_id  = 2;
+}
+
+message DisbandGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message TransferOwnerRequest {
+  uint64 player_id = 1;  // 现任群主(JWT ctx 覆盖)
+  uint64 group_id  = 2;
+  uint64 target_id = 3;  // 新群主(须为本群成员)
+}
+
+message TransferOwnerResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message GetGroupRequest {
+  uint64 group_id = 1;
+}
+
+message GetGroupResponse {
+  pandora.common.v1.ErrCode code = 1;
+  Group group = 2;
+}
+
+message ListGroupMembersRequest {
+  uint64 group_id = 1;
+}
+
+message ListGroupMembersResponse {
+  pandora.common.v1.ErrCode code = 1;
+  repeated GroupMember members = 2;
+}
+
+message ListMyGroupsRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖
+}
+
+message ListMyGroupsResponse {
+  pandora.common.v1.ErrCode code = 1;
+  repeated Group groups = 2;
+}

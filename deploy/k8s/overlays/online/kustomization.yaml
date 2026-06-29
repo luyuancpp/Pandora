@@ -19,13 +19,14 @@ namespace: pandora
 resources:
   - ../../services
 
-# 占位镜像:start.ps1 -Mode online 会用真实仓库地址 + tag 覆盖这里(17 个)。
+# 占位镜像:start.ps1 -Mode online 会用真实仓库地址 + tag 覆盖这里(18 个)。
 images:
   - { name: pandora/login,          newName: registry.example.com/pandora/login,          newTag: latest }
   - { name: pandora/player,         newName: registry.example.com/pandora/player,         newTag: latest }
   - { name: pandora/data-service,   newName: registry.example.com/pandora/data-service,   newTag: latest }
   - { name: pandora/friend,         newName: registry.example.com/pandora/friend,         newTag: latest }
   - { name: pandora/chat,           newName: registry.example.com/pandora/chat,           newTag: latest }
+  - { name: pandora/guild,          newName: registry.example.com/pandora/guild,          newTag: latest }
   - { name: pandora/player-locator, newName: registry.example.com/pandora/player-locator, newTag: latest }
   - { name: pandora/leaderboard,    newName: registry.example.com/pandora/leaderboard,    newTag: latest }
   - { name: pandora/team,           newName: registry.example.com/pandora/team,           newTag: latest }

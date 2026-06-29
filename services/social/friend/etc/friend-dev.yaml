@@ -36,3 +36,5 @@ friend:
   max_friends: 200
   # locator_addr: player_locator gRPC 地址;空 → ListFriends 不查在线状态(弱依赖)
   locator_addr: "127.0.0.1:50006"
+  # recommend_limit: 单次推荐好友数量(默认 10,硬上限 20,超界收敛到 20)
+  recommend_limit: 10

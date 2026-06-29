@@ -180,6 +180,10 @@ func main() {
 	repo := data.NewMySQLAuctionRepo(router)
 	book := data.NewRedisBookStore(rdb)
 	uc := biz.NewAuctionUsecase(repo, book, ledger, events, sf, cfg.Auction)
+	if mr, ok := biz.NewMarketRouter(cfg.CellRoute.MarketSelf, cfg.CellRoute.MarketPeerList()); ok {
+		uc.SetMarketRouter(mr)
+		helper.Infow("msg", "market_router_enabled", "self", mr.Self(), "peers", mr.PeerCount())
+	}
 
 	// 8a. 跨实例 per-market 单写者锁(限制#2):多实例部署时同一 market 全局只有一个实例撮合。
 	//     单实例(cross_instance_lock=false)仅靠进程内 striped lock。

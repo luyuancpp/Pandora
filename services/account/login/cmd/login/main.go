@@ -30,6 +30,8 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/luyuancpp/pandora/pkg/auth"
+	"github.com/luyuancpp/pandora/pkg/cellroute"
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/grpcclient"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/mysqlx"
@@ -145,6 +147,15 @@ func main() {
 			"warn", "unknown accounts auto-registered on first login; NEVER enable in prod")
 	}
 	ticketUC := biz.NewTicketUsecase(signer, verifier, jtiRepo)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, func(r *cellroute.Router) {
+		loginUC.SetCellRouter(r)
+		ticketUC.SetCellRouter(r)
+	}); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewLoginService(loginUC, ticketUC)
 
 	// 7. gRPC + HTTP server

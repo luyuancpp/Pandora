@@ -51,6 +51,12 @@ func NewFriendUsecase(repo data.FriendRepo, pusher FriendEventPusher, online dat
 	if cfg.MaxFriends <= 0 {
 		cfg.MaxFriends = 200
 	}
+	if cfg.RecommendLimit <= 0 {
+		cfg.RecommendLimit = 10
+	}
+	if cfg.RecommendLimit > recommendMaxLimit {
+		cfg.RecommendLimit = recommendMaxLimit
+	}
 	return &FriendUsecase{repo: repo, pusher: pusher, online: online, cfg: cfg}
 }
 
@@ -301,6 +307,76 @@ func (u *FriendUsecase) ListBlocks(ctx context.Context, playerID uint64) ([]*fri
 			PlayerId: r.BlockedID,
 			SinceMs:  r.SinceMs,
 		})
+	}
+	return infos, nil
+}
+
+// recommendMaxLimit 硬上限:无论 conf / 请求填多少,推荐数绝不超过 20(防爆量)。
+const recommendMaxLimit = 20
+
+// RecommendFriends 推荐好友(客户端可见结构 RecommendedFriendInfo,默认 conf.RecommendLimit 个,可刷新)。
+//
+// 算法:好友的好友(共同好友数降序、同数随机)优先,不足时随机活跃玩家兜底。
+// 排除自己 / 已是好友 / 双向拉黑 / 双向 pending 请求 / exclude(客户端回传已看过的)。
+// 服务端无状态,刷新靠客户端把已展示 id 放进 exclude;nickname 留空由客户端解析(§5.8)。
+// limit<=0 用 conf 默认;超 recommendMaxLimit(20)收敛到 20。
+func (u *FriendUsecase) RecommendFriends(ctx context.Context, playerID uint64, limit int, exclude []uint64) ([]*friendv1.RecommendedFriendInfo, error) {
+	if playerID == 0 {
+		return nil, errcode.New(errcode.ErrInvalidArg, "player_id required")
+	}
+	if limit <= 0 {
+		limit = u.cfg.RecommendLimit
+	}
+	if limit <= 0 {
+		limit = recommendMaxLimit
+	}
+	if limit > recommendMaxLimit {
+		limit = recommendMaxLimit
+	}
+
+	// FOF 候选优先;exclude 永远带上自己,防止把自己推荐给自己。
+	ex := make([]uint64, 0, len(exclude)+1)
+	ex = append(ex, exclude...)
+	ex = append(ex, playerID)
+
+	rows, err := u.repo.RecommendByMutual(ctx, playerID, ex, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// 不足 limit → 随机兜底,排除已选中的,避免重复。
+	if len(rows) < limit {
+		for _, r := range rows {
+			ex = append(ex, r.CandidateID)
+		}
+		extra, eerr := u.repo.RecommendRandom(ctx, playerID, ex, limit-len(rows))
+		if eerr != nil {
+			return nil, eerr
+		}
+		rows = append(rows, extra...)
+	}
+
+	ids := make([]uint64, 0, len(rows))
+	for _, r := range rows {
+		ids = append(ids, r.CandidateID)
+	}
+
+	var online map[uint64]data.OnlineStatus
+	if u.online != nil && len(ids) > 0 {
+		online = u.online.BatchOnline(ctx, ids)
+	}
+
+	infos := make([]*friendv1.RecommendedFriendInfo, 0, len(rows))
+	for _, r := range rows {
+		ri := &friendv1.RecommendedFriendInfo{
+			PlayerId:          r.CandidateID,
+			MutualFriendCount: uint32(r.Mutual),
+		}
+		if st, ok := online[r.CandidateID]; ok {
+			ri.IsOnline = st.Online
+			ri.LastSeenMs = st.LastSeenMs
+		}
+		infos = append(infos, ri)
 	}
 	return infos, nil
 }

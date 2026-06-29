@@ -177,6 +177,20 @@ func (s *FriendService) ListBlocks(ctx context.Context, _ *friendv1.ListBlocksRe
 	return &friendv1.ListBlocksResponse{Code: commonv1.ErrCode_OK, Blocks: blocks}, nil
 }
 
+// RecommendFriends 推荐好友(每批默认 5 个,客户端回传 exclude_player_ids 刷新)。player_id 以 JWT ctx 为准(R5)。
+func (s *FriendService) RecommendFriends(ctx context.Context, req *friendv1.RecommendFriendsRequest) (*friendv1.RecommendFriendsResponse, error) {
+	playerID := callerID(ctx)
+	if playerID == 0 {
+		return &friendv1.RecommendFriendsResponse{Code: commonv1.ErrCode_ERR_UNAUTHORIZED}, nil
+	}
+
+	recs, err := s.uc.RecommendFriends(ctx, playerID, int(req.GetLimit()), req.GetExcludePlayerIds())
+	if err != nil {
+		return &friendv1.RecommendFriendsResponse{Code: toProtoCode(err)}, nil
+	}
+	return &friendv1.RecommendFriendsResponse{Code: commonv1.ErrCode_OK, Recommendations: recs}, nil
+}
+
 // ── 辅助 ──────────────────────────────────────────────────────────────────────
 
 // callerID 从 ctx 取 JWT 注入的 player_id。

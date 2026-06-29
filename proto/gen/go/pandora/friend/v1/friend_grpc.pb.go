@@ -39,6 +39,7 @@ const (
 	FriendService_Block_FullMethodName              = "/pandora.friend.v1.FriendService/Block"
 	FriendService_Unblock_FullMethodName            = "/pandora.friend.v1.FriendService/Unblock"
 	FriendService_ListBlocks_FullMethodName         = "/pandora.friend.v1.FriendService/ListBlocks"
+	FriendService_RecommendFriends_FullMethodName   = "/pandora.friend.v1.FriendService/RecommendFriends"
 )
 
 // FriendServiceClient is the client API for FriendService service.
@@ -54,6 +55,7 @@ type FriendServiceClient interface {
 	Block(ctx context.Context, in *BlockRequest, opts ...grpc.CallOption) (*BlockResponse, error)
 	Unblock(ctx context.Context, in *UnblockRequest, opts ...grpc.CallOption) (*UnblockResponse, error)
 	ListBlocks(ctx context.Context, in *ListBlocksRequest, opts ...grpc.CallOption) (*ListBlocksResponse, error)
+	RecommendFriends(ctx context.Context, in *RecommendFriendsRequest, opts ...grpc.CallOption) (*RecommendFriendsResponse, error)
 }
 
 type friendServiceClient struct {
@@ -154,6 +156,16 @@ func (c *friendServiceClient) ListBlocks(ctx context.Context, in *ListBlocksRequ
 	return out, nil
 }
 
+func (c *friendServiceClient) RecommendFriends(ctx context.Context, in *RecommendFriendsRequest, opts ...grpc.CallOption) (*RecommendFriendsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecommendFriendsResponse)
+	err := c.cc.Invoke(ctx, FriendService_RecommendFriends_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FriendServiceServer is the server API for FriendService service.
 // All implementations should embed UnimplementedFriendServiceServer
 // for forward compatibility.
@@ -167,6 +179,7 @@ type FriendServiceServer interface {
 	Block(context.Context, *BlockRequest) (*BlockResponse, error)
 	Unblock(context.Context, *UnblockRequest) (*UnblockResponse, error)
 	ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error)
+	RecommendFriends(context.Context, *RecommendFriendsRequest) (*RecommendFriendsResponse, error)
 }
 
 // UnimplementedFriendServiceServer should be embedded to have
@@ -202,6 +215,9 @@ func (UnimplementedFriendServiceServer) Unblock(context.Context, *UnblockRequest
 }
 func (UnimplementedFriendServiceServer) ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListBlocks not implemented")
+}
+func (UnimplementedFriendServiceServer) RecommendFriends(context.Context, *RecommendFriendsRequest) (*RecommendFriendsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecommendFriends not implemented")
 }
 func (UnimplementedFriendServiceServer) testEmbeddedByValue() {}
 
@@ -385,6 +401,24 @@ func _FriendService_ListBlocks_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FriendService_RecommendFriends_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecommendFriendsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FriendServiceServer).RecommendFriends(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FriendService_RecommendFriends_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FriendServiceServer).RecommendFriends(ctx, req.(*RecommendFriendsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FriendService_ServiceDesc is the grpc.ServiceDesc for FriendService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -427,6 +461,10 @@ var FriendService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListBlocks",
 			Handler:    _FriendService_ListBlocks_Handler,
+		},
+		{
+			MethodName: "RecommendFriends",
+			Handler:    _FriendService_RecommendFriends_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -12,6 +12,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/mysqlx"
 
@@ -85,6 +87,12 @@ func main() {
 	// 4. 装配链
 	repo := data.NewMySQLInventoryRepo(db)
 	uc := biz.NewInventoryUsecase(repo, cfg.Inventory)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewInventoryService(uc)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

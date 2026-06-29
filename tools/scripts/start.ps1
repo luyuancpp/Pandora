@@ -4,8 +4,8 @@
 
 .DESCRIPTION
   一条命令把后端跑起来,覆盖 5 套环境(DS 分配模式随环境变):
-    local    本地 windows 调试 —— 基础设施在 docker,17 个 go 服务以宿主进程跑(可断点);DS=local(Windows PandoraServer.exe)
-    docker   本地 docker 启动   —— 基础设施 + 17 个 go 服务全跑在本机 docker;DS=mock(容器内无真 DS)
+    local    本地 windows 调试 —— 基础设施在 docker,18 个 go 服务以宿主进程跑(可断点);DS=local(Windows PandoraServer.exe)
+    docker   本地 docker 启动   —— 基础设施 + 18 个 go 服务全跑在本机 docker;DS=mock(容器内无真 DS)
     intranet 内网测试服     —— 同 docker 全容器,但绑定内网 IP 供多人联调;DS=mock
     online   线上 k8s 集群   —— kustomize 部署到远端 k8s + Agones 真 Linux DS;DS=agones
                              用 -Env test|prod 区分「测试服集群」与「生产 kbs 集群」(不同 kube-context)
@@ -70,7 +70,7 @@ param(
     [string]$DsGatewayAddr, # online:DS 回调入口(如 pandora-envoy.pandora.svc:8444)
     [ValidateSet('0', '1')]
     [string]$DsGatewayTls = '1', # online:DS 回调是否 TLS(线上默认 1)
-    [switch]$BuildPush    # online:本地构建并推送 17 个镜像到 -Registry(远端发布动作,需人工授权)
+    [switch]$BuildPush    # online:本地构建并推送 18 个镜像到 -Registry(远端发布动作,需人工授权)
 )
 
 $ErrorActionPreference = 'Stop'
@@ -199,7 +199,7 @@ function Invoke-Local {
         & "$ScriptDir/dev_all.ps1" -Down
         return
     }
-    Write-Step "local 模式:基础设施(docker) + 17 个 go 服务(宿主进程)"
+    Write-Step "local 模式:基础设施(docker) + 18 个 go 服务(宿主进程)"
     Write-Info "策划本地联调用这个;服务可在 VS Code 断点调试。"
     & "$ScriptDir/dev_all.ps1" -Profile $Profile
 }
@@ -213,7 +213,7 @@ function Invoke-Docker {
         & "$ScriptDir/dev_down.ps1"
         return
     }
-    Write-Step "docker 模式:基础设施 + 17 个 go 服务全部容器化"
+    Write-Step "docker 模式:基础设施 + 18 个 go 服务全部容器化"
 
     # local 宿主进程会抢同一批端口,先停掉
     Write-Info "先停掉可能在跑的宿主 go 服务(避免端口冲突)..."
@@ -400,7 +400,7 @@ function Invoke-K8s {
     Write-Step "[4/7] 安装 Agones + apply RBAC/Fleet(真 Linux DS)"
     Apply-AgonesManifests -InstallAgones
 
-    Write-Step "[5/7] 构建 17 个服务镜像"
+    Write-Step "[5/7] 构建 18 个服务镜像"
     Build-AllImages
 
     Write-Step "[6/7] 把镜像 load 进 minikube"
@@ -414,7 +414,7 @@ function Invoke-K8s {
     kubectl apply -k $servicesDir
     Assert-LastExit 'kubectl apply -k services'
     # 镜像 tag 固定为 :dev,重建/重 load 后 image 字符串不变 -> apply 报 unchanged,旧 Pod 不会换。
-    # 按名强制滚动重启这 17 个业务 Deployment(不碰 infra,避免重启 kafka 又触发依赖服务 CrashLoop),
+    # 按名强制滚动重启这 18 个业务 Deployment(不碰 infra,避免重启 kafka 又触发依赖服务 CrashLoop),
     # 确保跑的是刚 build 的新二进制。
     Write-Info "rollout restart 业务 Deployment(同 :dev tag 重建后强制换 Pod)..."
     foreach ($svc in (Get-ServiceList)) {
@@ -465,7 +465,7 @@ function Invoke-Online {
     }
 
     if ($BuildPush) {
-        Write-Step "构建并推送 17 个 Go 服务镜像到 $Registry"
+        Write-Step "构建并推送 18 个 Go 服务镜像到 $Registry"
         Build-AllImages
         foreach ($svc in (Get-ServiceList)) {
             $local  = "pandora/$($svc.Name):dev"
@@ -514,6 +514,7 @@ function Get-ServiceList {
         @{ Name = 'data-service';   Dir = 'services/data/data_service';        Cmd = 'data_service' }
         @{ Name = 'friend';         Dir = 'services/social/friend';            Cmd = 'friend' }
         @{ Name = 'chat';           Dir = 'services/social/chat';              Cmd = 'chat' }
+        @{ Name = 'guild';          Dir = 'services/social/guild';             Cmd = 'guild' }
         @{ Name = 'player-locator'; Dir = 'services/runtime/player_locator';   Cmd = 'locator' }
         @{ Name = 'leaderboard';    Dir = 'services/runtime/leaderboard';      Cmd = 'leaderboard' }
         @{ Name = 'team';           Dir = 'services/matchmaking/team';         Cmd = 'team' }

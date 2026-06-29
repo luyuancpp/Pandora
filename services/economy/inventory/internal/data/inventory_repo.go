@@ -80,6 +80,16 @@ type InventoryRepo interface {
 	// 重复结算命中 uk → already=true(资产只转一次,不变量 §9.2 / §9.7)。
 	SettleAuctionMatch(ctx context.Context, matchID, sellerID, buyerID, sellOrderID, buyOrderID uint64, itemConfigID uint32, quantity, totalGold int64, idempotencyKey, detail string) (already bool, err error)
 
+	// SettlePlayerTrade 原子结算一笔玩家间点对点交易(一个本地事务内卖↔买双方资产对转):
+	//   与拍卖不同,P2P 交易无 escrow 预冻,直接从双方活跃背包 / 余额扣转 ——
+	//     卖家交付 sellerItems 给买家、收 buyerItems + price 金币;
+	//     买家交付 buyerItems + price 金币给卖家、收 sellerItems。
+	//   任一方道具 / 金币不足 → ErrInventoryInsufficient,整笔回滚。
+	// 防死锁:对 player_items / player_currency 行锁全部按 player_id 升序、道具按 item_config_id 升序获取。
+	// 幂等键(= 业务层基于 order_id 派生)在事务内给买卖双方各记一条流水,
+	// 重复结算命中 uk → already=true(资产只转一次,不变量 §9.7)。
+	SettlePlayerTrade(ctx context.Context, orderID, sellerID, buyerID uint64, sellerItems, buyerItems []ItemGrant, price int64, idempotencyKey, detail string) (already bool, err error)
+
 	// FreezeForOrder 拍卖挂单冻结资产(一个本地事务内把活跃资产移入 escrow):
 	//   EscrowKindItem:扣 quantity 个 itemConfigID,记 item escrow(frozenGold 忽略);
 	//   EscrowKindGold:扣 frozenGold 金币,记 gold escrow(itemConfigID/quantity 仅记录道具上下文)。
@@ -169,6 +179,29 @@ func SellFingerprint(itemConfigID uint32, count, gold int64) string {
 func AuctionSettleFingerprint(sellerID, buyerID uint64, itemConfigID uint32, quantity, totalGold int64) string {
 	return hashHex(fmt.Sprintf("auction_settle|seller=%d|buyer=%d|item=%d|qty=%d|gold=%d",
 		sellerID, buyerID, itemConfigID, quantity, totalGold))
+}
+
+// PlayerTradeSettleFingerprint 计算玩家间交易结算请求指纹(双方 + 双向道具 + 金币)。
+// 同一 idempotency_key 复用到不同交易内容 → 指纹不一致判冲突,防 key 复用串改账。
+func PlayerTradeSettleFingerprint(sellerID, buyerID uint64, sellerItems, buyerItems []ItemGrant, price int64) string {
+	write := func(b *strings.Builder, tag string, items []ItemGrant) {
+		sorted := append([]ItemGrant(nil), items...)
+		sort.Slice(sorted, func(i, j int) bool { return sorted[i].ItemConfigID < sorted[j].ItemConfigID })
+		b.WriteString(tag)
+		for _, it := range sorted {
+			b.WriteByte('|')
+			b.WriteString(strconv.FormatUint(uint64(it.ItemConfigID), 10))
+			b.WriteByte(':')
+			b.WriteString(strconv.FormatInt(it.Count, 10))
+		}
+	}
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("trade_settle|seller=%d|buyer=%d|", sellerID, buyerID))
+	write(&b, "sell", sellerItems)
+	write(&b, "|buy", buyerItems)
+	b.WriteString("|price=")
+	b.WriteString(strconv.FormatInt(price, 10))
+	return hashHex(b.String())
 }
 
 func hashHex(s string) string {
@@ -470,6 +503,101 @@ func (r *MySQLInventoryRepo) SettleAuctionMatch(ctx context.Context, matchID, se
 
 	if cerr := tx.Commit(); cerr != nil {
 		return false, errcode.New(errcode.ErrInternal, "commit auction settle match=%d: %v", matchID, cerr)
+	}
+	return false, nil
+}
+
+// SettlePlayerTrade 原子结算一笔玩家间点对点交易(一个本地事务内卖↔买双方资产对转)。
+//
+// 与 SettleAuctionMatch 的差异:P2P 交易无 escrow 预冻结,直接从双方活跃余额扣转,
+// 故任一方道具 / 金币不足都会让整笔事务回滚并返回 ErrInventoryInsufficient(成交可能失败)。
+//
+// 防死锁:对 player_items / player_currency 的行锁按 player_id 升序、道具按 item_config_id
+// 升序获取(指纹/腿内均先排序),杜绝并发结算(尤其买卖角色对调的两笔)成环。
+// 幂等:买卖双方各记一条同 idempotency_key 的流水,任一命中 uk → already=true 回放(不重复转)。
+func (r *MySQLInventoryRepo) SettlePlayerTrade(ctx context.Context, orderID, sellerID, buyerID uint64, sellerItems, buyerItems []ItemGrant, price int64, idempotencyKey, detail string) (bool, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, errcode.New(errcode.ErrInternal, "begin tx: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	fp := PlayerTradeSettleFingerprint(sellerID, buyerID, sellerItems, buyerItems, price)
+
+	// 1) 幂等流水:按 player_id 升序声明两条(同 key),避免并发交叉插入死锁。
+	loID, hiID := sellerID, buyerID
+	loOp, hiOp := "trade_sell", "trade_buy"
+	if buyerID < sellerID {
+		loID, hiID = buyerID, sellerID
+		loOp, hiOp = "trade_buy", "trade_sell"
+	}
+	loAlready, _, _, lerr := claimLedger(ctx, tx, loID, idempotencyKey, loOp, fp, detail)
+	if lerr != nil {
+		return false, lerr
+	}
+	hiAlready, _, _, herr := claimLedger(ctx, tx, hiID, idempotencyKey, hiOp, fp, detail)
+	if herr != nil {
+		return false, herr
+	}
+	if loAlready || hiAlready {
+		return true, nil
+	}
+
+	// 2) 资产对转。道具按 item_config_id 升序处理,保证并发结算触同一行时锁序一致。
+	sortedSeller := append([]ItemGrant(nil), sellerItems...)
+	sort.Slice(sortedSeller, func(i, j int) bool { return sortedSeller[i].ItemConfigID < sortedSeller[j].ItemConfigID })
+	sortedBuyer := append([]ItemGrant(nil), buyerItems...)
+	sort.Slice(sortedBuyer, func(i, j int) bool { return sortedBuyer[i].ItemConfigID < sortedBuyer[j].ItemConfigID })
+
+	// 卖家腿:交付 sellerItems(扣) + 收 buyerItems(加) + 收 price 金币(加)。
+	sellerLeg := func() error {
+		for _, it := range sortedSeller {
+			if _, derr := deductItemTx(ctx, tx, sellerID, it.ItemConfigID, it.Count); derr != nil {
+				return derr
+			}
+		}
+		for _, it := range sortedBuyer {
+			if aerr := addItemTx(ctx, tx, sellerID, it.ItemConfigID, it.Count); aerr != nil {
+				return aerr
+			}
+		}
+		if price > 0 {
+			return addGoldTx(ctx, tx, sellerID, price)
+		}
+		return nil
+	}
+	// 买家腿:交付 buyerItems(扣) + 付 price 金币(扣) + 收 sellerItems(加)。
+	buyerLeg := func() error {
+		for _, it := range sortedBuyer {
+			if _, derr := deductItemTx(ctx, tx, buyerID, it.ItemConfigID, it.Count); derr != nil {
+				return derr
+			}
+		}
+		if price > 0 {
+			if _, derr := deductGoldTx(ctx, tx, buyerID, price); derr != nil {
+				return derr
+			}
+		}
+		for _, it := range sortedSeller {
+			if aerr := addItemTx(ctx, tx, buyerID, it.ItemConfigID, it.Count); aerr != nil {
+				return aerr
+			}
+		}
+		return nil
+	}
+	first, second := sellerLeg, buyerLeg
+	if buyerID < sellerID {
+		first, second = buyerLeg, sellerLeg
+	}
+	if ferr := first(); ferr != nil {
+		return false, ferr
+	}
+	if serr := second(); serr != nil {
+		return false, serr
+	}
+
+	if cerr := tx.Commit(); cerr != nil {
+		return false, errcode.New(errcode.ErrInternal, "commit player trade settle order=%d: %v", orderID, cerr)
 	}
 	return false, nil
 }

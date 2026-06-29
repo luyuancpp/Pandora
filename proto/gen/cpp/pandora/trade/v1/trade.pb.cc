@@ -67,9 +67,9 @@ constexpr TradeItem::ParseTableT_ TradeItem::InternalGenerateParseTable_(const :
     {
       PROTOBUF_FIELD_OFFSET(TradeItem, _impl_._has_bits_),
       0, // no _extensions_
-      2, 8,  // max_field_number, fast_idx_mask
+      10, 0,  // max_field_number, fast_idx_mask
       offsetof(ParseTableT_, field_lookup_table),
-      4294967292,  // skipmap
+      4294966781,  // skipmap
       offsetof(ParseTableT_, field_entries),
       2,  // num_field_entries
       0,  // num_aux_entries
@@ -82,26 +82,19 @@ constexpr TradeItem::ParseTableT_ TradeItem::InternalGenerateParseTable_(const :
       #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
     }, {{
       // int32 count = 2 [json_name = "count"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(TradeItem, _impl_.count_), 1>(),
-       {16, 1, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(TradeItem, _impl_.count_), 0>(),
+       {16, 0, 0,
         PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.count_)}},
-      // string item_uid = 1 [json_name = "itemUid"];
-      {::_pbi::TcParser::FastUS1,
-       {10, 0, 0,
-        PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.item_uid_)}},
     }}, {{
       65535, 65535
     }}, {{
-      // string item_uid = 1 [json_name = "itemUid"];
-      {PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.item_uid_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
       // int32 count = 2 [json_name = "count"];
-      {PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.count_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+      {PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.count_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+      // uint32 item_config_id = 10 [json_name = "itemConfigId"];
+      {PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.item_config_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
     }},
     // no aux_entries
     {{
-      "\32\10\0\0\0\0\0\0"
-      "pandora.trade.v1.TradeItem"
-      "item_uid"
     }},
   };
 }
@@ -111,10 +104,8 @@ inline constexpr TradeItem::Impl_::Impl_(
     [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
-        item_uid_(
-            &::google::protobuf::internal::fixed_address_empty_string,
-            ::_pbi::ConstantInitialized()),
-        count_{0} {}
+        count_{0},
+        item_config_id_{0u} {}
 
 template <typename>
 constexpr TradeItem::TradeItem(::_pbi::ConstantInitialized,
@@ -132,7 +123,7 @@ inline void* PROTOBUF_NONNULL TradeItem::PlacementNew_(
   return ::new (mem) TradeItem(arena);
 }
 constexpr auto TradeItem::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(TradeItem), alignof(TradeItem));
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(TradeItem), alignof(TradeItem));
 }
 constexpr auto TradeItem::InternalGenerateClassData_(
     const MessageLite& prototype,
@@ -1101,12 +1092,12 @@ constexpr Order::ParseTableT_ Order::InternalGenerateParseTable_(const ::_pbi::C
     {
       PROTOBUF_FIELD_OFFSET(Order, _impl_._has_bits_),
       0, // no _extensions_
-      8, 56,  // max_field_number, fast_idx_mask
+      10, 120,  // max_field_number, fast_idx_mask
       offsetof(ParseTableT_, field_lookup_table),
-      4294967040,  // skipmap
+      4294966528,  // skipmap
       offsetof(ParseTableT_, field_entries),
-      8,  // num_field_entries
-      1,  // num_aux_entries
+      9,  // num_field_entries
+      2,  // num_aux_entries
       offsetof(ParseTableT_, aux_entries),
       class_data,
       nullptr,  // post_loop_handler
@@ -1115,59 +1106,77 @@ constexpr Order::ParseTableT_ Order::InternalGenerateParseTable_(const ::_pbi::C
       ::_pbi::TcParser::GetTable<::pandora::trade::v1::Order>(),  // to_prefetch
       #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
     }, {{
-      // int64 expires_at_ms = 8 [json_name = "expiresAtMs"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.expires_at_ms_), 6>(),
-       {64, 6, 0,
-        PROTOBUF_FIELD_OFFSET(Order, _impl_.expires_at_ms_)}},
+      {::_pbi::TcParser::MiniParse, {}},
       // uint64 order_id = 1 [json_name = "orderId"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.order_id_), 1>(),
-       {8, 1, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.order_id_), 2>(),
+       {8, 2, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.order_id_)}},
       // uint64 seller_id = 2 [json_name = "sellerId"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.seller_id_), 2>(),
-       {16, 2, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.seller_id_), 3>(),
+       {16, 3, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.seller_id_)}},
       // uint64 buyer_id = 3 [json_name = "buyerId"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.buyer_id_), 3>(),
-       {24, 3, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.buyer_id_), 4>(),
+       {24, 4, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.buyer_id_)}},
       // repeated .pandora.trade.v1.TradeItem items = 4 [json_name = "items"];
       {::_pbi::TcParser::FastMtR1,
        {34, 0, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.items_)}},
       // int64 price = 5 [json_name = "price"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.price_), 4>(),
-       {40, 4, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.price_), 5>(),
+       {40, 5, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.price_)}},
       // .pandora.trade.v1.OrderState state = 6 [json_name = "state"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Order, _impl_.state_), 7>(),
-       {48, 7, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Order, _impl_.state_), 8>(),
+       {48, 8, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.state_)}},
       // int64 created_at_ms = 7 [json_name = "createdAtMs"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.created_at_ms_), 5>(),
-       {56, 5, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.created_at_ms_), 6>(),
+       {56, 6, 0,
         PROTOBUF_FIELD_OFFSET(Order, _impl_.created_at_ms_)}},
+      // int64 expires_at_ms = 8 [json_name = "expiresAtMs"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(Order, _impl_.expires_at_ms_), 7>(),
+       {64, 7, 0,
+        PROTOBUF_FIELD_OFFSET(Order, _impl_.expires_at_ms_)}},
+      {::_pbi::TcParser::MiniParse, {}},
+      // repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
+      {::_pbi::TcParser::FastMtR1,
+       {82, 1, 1,
+        PROTOBUF_FIELD_OFFSET(Order, _impl_.buyer_items_)}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
     }}, {{
       65535, 65535
     }}, {{
       // uint64 order_id = 1 [json_name = "orderId"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.order_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.order_id_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
       // uint64 seller_id = 2 [json_name = "sellerId"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.seller_id_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.seller_id_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
       // uint64 buyer_id = 3 [json_name = "buyerId"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.buyer_id_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.buyer_id_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
       // repeated .pandora.trade.v1.TradeItem items = 4 [json_name = "items"];
       {PROTOBUF_FIELD_OFFSET(Order, _impl_.items_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
       // int64 price = 5 [json_name = "price"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.price_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.price_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
       // .pandora.trade.v1.OrderState state = 6 [json_name = "state"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.state_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.state_), _Internal::kHasBitsOffset + 8, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
       // int64 created_at_ms = 7 [json_name = "createdAtMs"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.created_at_ms_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.created_at_ms_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
       // int64 expires_at_ms = 8 [json_name = "expiresAtMs"];
-      {PROTOBUF_FIELD_OFFSET(Order, _impl_.expires_at_ms_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.expires_at_ms_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      // repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
+      {PROTOBUF_FIELD_OFFSET(Order, _impl_.buyer_items_), _Internal::kHasBitsOffset + 1, 1, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
     }},
     {{
+        #ifndef PROTOBUF_MESSAGE_GLOBALS
+        {::_pbi::TcParser::GetTable<::pandora::trade::v1::TradeItem>()},
+        #else
+        {::_pbi::FieldAuxMessageGlobals(), &::pandora::trade::v1::TradeItem_globals_},
+        #endif
         #ifndef PROTOBUF_MESSAGE_GLOBALS
         {::_pbi::TcParser::GetTable<::pandora::trade::v1::TradeItem>()},
         #else
@@ -1187,6 +1196,11 @@ inline constexpr Order::Impl_::Impl_(
         items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
             ::pandora::trade::v1::Order,
             PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.items_)>()
+         }
+        ,
+        buyer_items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::trade::v1::Order,
+            PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.buyer_items_)>()
          }
         ,
         order_id_{::uint64_t{0u}},
@@ -1301,12 +1315,12 @@ constexpr CreateOrderRequest::ParseTableT_ CreateOrderRequest::InternalGenerateP
     {
       PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_._has_bits_),
       0, // no _extensions_
-      4, 24,  // max_field_number, fast_idx_mask
+      5, 56,  // max_field_number, fast_idx_mask
       offsetof(ParseTableT_, field_lookup_table),
-      4294967280,  // skipmap
+      4294967264,  // skipmap
       offsetof(ParseTableT_, field_entries),
-      4,  // num_field_entries
-      1,  // num_aux_entries
+      5,  // num_field_entries
+      2,  // num_aux_entries
       offsetof(ParseTableT_, aux_entries),
       class_data,
       nullptr,  // post_loop_handler
@@ -1315,35 +1329,49 @@ constexpr CreateOrderRequest::ParseTableT_ CreateOrderRequest::InternalGenerateP
       ::_pbi::TcParser::GetTable<::pandora::trade::v1::CreateOrderRequest>(),  // to_prefetch
       #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
     }, {{
-      // int64 price = 4 [json_name = "price"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.price_), 3>(),
-       {32, 3, 0,
-        PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.price_)}},
+      {::_pbi::TcParser::MiniParse, {}},
       // uint64 seller_id = 1 [json_name = "sellerId"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.seller_id_), 1>(),
-       {8, 1, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.seller_id_), 2>(),
+       {8, 2, 0,
         PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.seller_id_)}},
       // uint64 buyer_id = 2 [json_name = "buyerId"];
-      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.buyer_id_), 2>(),
-       {16, 2, 0,
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.buyer_id_), 3>(),
+       {16, 3, 0,
         PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.buyer_id_)}},
       // repeated .pandora.trade.v1.TradeItem items = 3 [json_name = "items"];
       {::_pbi::TcParser::FastMtR1,
        {26, 0, 0,
         PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.items_)}},
+      // int64 price = 4 [json_name = "price"];
+      {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateOrderRequest, _impl_.price_), 4>(),
+       {32, 4, 0,
+        PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.price_)}},
+      // repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
+      {::_pbi::TcParser::FastMtR1,
+       {42, 1, 1,
+        PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.buyer_items_)}},
+      {::_pbi::TcParser::MiniParse, {}},
+      {::_pbi::TcParser::MiniParse, {}},
     }}, {{
       65535, 65535
     }}, {{
       // uint64 seller_id = 1 [json_name = "sellerId"];
-      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.seller_id_), _Internal::kHasBitsOffset + 1, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.seller_id_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
       // uint64 buyer_id = 2 [json_name = "buyerId"];
-      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.buyer_id_), _Internal::kHasBitsOffset + 2, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
+      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.buyer_id_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt64)},
       // repeated .pandora.trade.v1.TradeItem items = 3 [json_name = "items"];
       {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.items_), _Internal::kHasBitsOffset + 0, 0, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
       // int64 price = 4 [json_name = "price"];
-      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.price_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.price_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kInt64)},
+      // repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
+      {PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.buyer_items_), _Internal::kHasBitsOffset + 1, 1, (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
     }},
     {{
+        #ifndef PROTOBUF_MESSAGE_GLOBALS
+        {::_pbi::TcParser::GetTable<::pandora::trade::v1::TradeItem>()},
+        #else
+        {::_pbi::FieldAuxMessageGlobals(), &::pandora::trade::v1::TradeItem_globals_},
+        #endif
         #ifndef PROTOBUF_MESSAGE_GLOBALS
         {::_pbi::TcParser::GetTable<::pandora::trade::v1::TradeItem>()},
         #else
@@ -1363,6 +1391,11 @@ inline constexpr CreateOrderRequest::Impl_::Impl_(
         items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
             ::pandora::trade::v1::CreateOrderRequest,
             PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.items_)>()
+         }
+        ,
+        buyer_items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::trade::v1::CreateOrderRequest,
+            PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.buyer_items_)>()
          }
         ,
         seller_id_{::uint64_t{0u}},
@@ -1632,13 +1665,13 @@ const ::uint32_t
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::TradeItem, _impl_._has_bits_),
         5, // hasbit index offset
-        PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::TradeItem, _impl_.item_uid_),
+        PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::TradeItem, _impl_.item_config_id_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::TradeItem, _impl_.count_),
-        0,
         1,
+        0,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_._has_bits_),
-        11, // hasbit index offset
+        12, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.order_id_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.seller_id_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.buyer_id_),
@@ -1647,25 +1680,29 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.state_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.created_at_ms_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.expires_at_ms_),
-        1,
+        PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.buyer_items_),
         2,
         3,
-        0,
         4,
-        7,
+        0,
         5,
+        8,
         6,
+        7,
+        1,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_._has_bits_),
-        7, // hasbit index offset
+        8, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.seller_id_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.buyer_id_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.items_),
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.price_),
-        1,
+        PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.buyer_items_),
         2,
-        0,
         3,
+        0,
+        4,
+        1,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderResponse, _impl_._has_bits_),
         5, // hasbit index offset
@@ -1719,14 +1756,14 @@ static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, sizeof(::pandora::trade::v1::TradeItem)},
         {7, sizeof(::pandora::trade::v1::Order)},
-        {26, sizeof(::pandora::trade::v1::CreateOrderRequest)},
-        {37, sizeof(::pandora::trade::v1::CreateOrderResponse)},
-        {44, sizeof(::pandora::trade::v1::ConfirmOrderRequest)},
-        {51, sizeof(::pandora::trade::v1::ConfirmOrderResponse)},
-        {58, sizeof(::pandora::trade::v1::CancelOrderRequest)},
-        {65, sizeof(::pandora::trade::v1::CancelOrderResponse)},
-        {70, sizeof(::pandora::trade::v1::ListMyOrdersRequest)},
-        {77, sizeof(::pandora::trade::v1::ListMyOrdersResponse)},
+        {28, sizeof(::pandora::trade::v1::CreateOrderRequest)},
+        {41, sizeof(::pandora::trade::v1::CreateOrderResponse)},
+        {48, sizeof(::pandora::trade::v1::ConfirmOrderRequest)},
+        {55, sizeof(::pandora::trade::v1::ConfirmOrderResponse)},
+        {62, sizeof(::pandora::trade::v1::CancelOrderRequest)},
+        {69, sizeof(::pandora::trade::v1::CancelOrderResponse)},
+        {74, sizeof(::pandora::trade::v1::ListMyOrdersRequest)},
+        {81, sizeof(::pandora::trade::v1::ListMyOrdersResponse)},
 };
 static const ::_pbi::MessageGlobalsBase* PROTOBUF_NONNULL const
     file_message_globals[] = {
@@ -1745,52 +1782,55 @@ const char descriptor_table_protodef_pandora_2ftrade_2fv1_2ftrade_2eproto[] ABSL
     protodesc_cold) = {
     "\n\034pandora/trade/v1/trade.proto\022\020pandora."
     "trade.v1\032\037pandora/common/v1/errcode.prot"
-    "o\"B\n\tTradeItem\022\031\n\010item_uid\030\001 \001(\tR\007itemUi"
-    "d\022\024\n\005count\030\002 \001(\005R\005countJ\004\010\003\020\n\"\245\002\n\005Order\022"
-    "\031\n\010order_id\030\001 \001(\004R\007orderId\022\033\n\tseller_id\030"
-    "\002 \001(\004R\010sellerId\022\031\n\010buyer_id\030\003 \001(\004R\007buyer"
-    "Id\0221\n\005items\030\004 \003(\0132\033.pandora.trade.v1.Tra"
-    "deItemR\005items\022\024\n\005price\030\005 \001(\003R\005price\0222\n\005s"
-    "tate\030\006 \001(\0162\034.pandora.trade.v1.OrderState"
-    "R\005state\022\"\n\rcreated_at_ms\030\007 \001(\003R\013createdA"
-    "tMs\022\"\n\rexpires_at_ms\030\010 \001(\003R\013expiresAtMsJ"
-    "\004\010\t\020\n\"\225\001\n\022CreateOrderRequest\022\033\n\tseller_i"
-    "d\030\001 \001(\004R\010sellerId\022\031\n\010buyer_id\030\002 \001(\004R\007buy"
-    "erId\0221\n\005items\030\003 \003(\0132\033.pandora.trade.v1.T"
-    "radeItemR\005items\022\024\n\005price\030\004 \001(\003R\005price\"`\n"
-    "\023CreateOrderResponse\022.\n\004code\030\001 \001(\0162\032.pan"
-    "dora.common.v1.ErrCodeR\004code\022\031\n\010order_id"
-    "\030\002 \001(\004R\007orderId\"M\n\023ConfirmOrderRequest\022\033"
-    "\n\tplayer_id\030\001 \001(\004R\010playerId\022\031\n\010order_id\030"
-    "\002 \001(\004R\007orderId\"\201\001\n\024ConfirmOrderResponse\022"
-    ".\n\004code\030\001 \001(\0162\032.pandora.common.v1.ErrCod"
-    "eR\004code\0229\n\tnew_state\030\002 \001(\0162\034.pandora.tra"
-    "de.v1.OrderStateR\010newState\"L\n\022CancelOrde"
-    "rRequest\022\033\n\tplayer_id\030\001 \001(\004R\010playerId\022\031\n"
-    "\010order_id\030\002 \001(\004R\007orderId\"E\n\023CancelOrderR"
-    "esponse\022.\n\004code\030\001 \001(\0162\032.pandora.common.v"
-    "1.ErrCodeR\004code\"S\n\023ListMyOrdersRequest\022\033"
-    "\n\tplayer_id\030\001 \001(\004R\010playerId\022\037\n\013active_on"
-    "ly\030\002 \001(\010R\nactiveOnly\"w\n\024ListMyOrdersResp"
-    "onse\022.\n\004code\030\001 \001(\0162\032.pandora.common.v1.E"
-    "rrCodeR\004code\022/\n\006orders\030\002 \003(\0132\027.pandora.t"
-    "rade.v1.OrderR\006orders*\353\001\n\nOrderState\022\033\n\027"
-    "ORDER_STATE_UNSPECIFIED\020\000\022\027\n\023ORDER_STATE"
-    "_PENDING\020\001\022\037\n\033ORDER_STATE_BUYER_CONFIRME"
-    "D\020\002\022 \n\034ORDER_STATE_SELLER_CONFIRMED\020\003\022\031\n"
-    "\025ORDER_STATE_COMPLETED\020\004\022\026\n\022ORDER_STATE_"
-    "FAILED\020\005\022\027\n\023ORDER_STATE_EXPIRED\020\006\022\030\n\024ORD"
-    "ER_STATE_CANCELED\020\0072\204\003\n\014TradeService\022Z\n\013"
-    "CreateOrder\022$.pandora.trade.v1.CreateOrd"
-    "erRequest\032%.pandora.trade.v1.CreateOrder"
-    "Response\022]\n\014ConfirmOrder\022%.pandora.trade"
-    ".v1.ConfirmOrderRequest\032&.pandora.trade."
-    "v1.ConfirmOrderResponse\022Z\n\013CancelOrder\022$"
-    ".pandora.trade.v1.CancelOrderRequest\032%.p"
-    "andora.trade.v1.CancelOrderResponse\022]\n\014L"
-    "istMyOrders\022%.pandora.trade.v1.ListMyOrd"
-    "ersRequest\032&.pandora.trade.v1.ListMyOrde"
-    "rsResponseb\006proto3"
+    "o\"S\n\tTradeItem\022$\n\016item_config_id\030\n \001(\rR\014"
+    "itemConfigId\022\024\n\005count\030\002 \001(\005R\005countJ\004\010\001\020\002"
+    "J\004\010\003\020\n\"\343\002\n\005Order\022\031\n\010order_id\030\001 \001(\004R\007orde"
+    "rId\022\033\n\tseller_id\030\002 \001(\004R\010sellerId\022\031\n\010buye"
+    "r_id\030\003 \001(\004R\007buyerId\0221\n\005items\030\004 \003(\0132\033.pan"
+    "dora.trade.v1.TradeItemR\005items\022\024\n\005price\030"
+    "\005 \001(\003R\005price\0222\n\005state\030\006 \001(\0162\034.pandora.tr"
+    "ade.v1.OrderStateR\005state\022\"\n\rcreated_at_m"
+    "s\030\007 \001(\003R\013createdAtMs\022\"\n\rexpires_at_ms\030\010 "
+    "\001(\003R\013expiresAtMs\022<\n\013buyer_items\030\n \003(\0132\033."
+    "pandora.trade.v1.TradeItemR\nbuyerItemsJ\004"
+    "\010\t\020\n\"\323\001\n\022CreateOrderRequest\022\033\n\tseller_id"
+    "\030\001 \001(\004R\010sellerId\022\031\n\010buyer_id\030\002 \001(\004R\007buye"
+    "rId\0221\n\005items\030\003 \003(\0132\033.pandora.trade.v1.Tr"
+    "adeItemR\005items\022\024\n\005price\030\004 \001(\003R\005price\022<\n\013"
+    "buyer_items\030\005 \003(\0132\033.pandora.trade.v1.Tra"
+    "deItemR\nbuyerItems\"`\n\023CreateOrderRespons"
+    "e\022.\n\004code\030\001 \001(\0162\032.pandora.common.v1.ErrC"
+    "odeR\004code\022\031\n\010order_id\030\002 \001(\004R\007orderId\"M\n\023"
+    "ConfirmOrderRequest\022\033\n\tplayer_id\030\001 \001(\004R\010"
+    "playerId\022\031\n\010order_id\030\002 \001(\004R\007orderId\"\201\001\n\024"
+    "ConfirmOrderResponse\022.\n\004code\030\001 \001(\0162\032.pan"
+    "dora.common.v1.ErrCodeR\004code\0229\n\tnew_stat"
+    "e\030\002 \001(\0162\034.pandora.trade.v1.OrderStateR\010n"
+    "ewState\"L\n\022CancelOrderRequest\022\033\n\tplayer_"
+    "id\030\001 \001(\004R\010playerId\022\031\n\010order_id\030\002 \001(\004R\007or"
+    "derId\"E\n\023CancelOrderResponse\022.\n\004code\030\001 \001"
+    "(\0162\032.pandora.common.v1.ErrCodeR\004code\"S\n\023"
+    "ListMyOrdersRequest\022\033\n\tplayer_id\030\001 \001(\004R\010"
+    "playerId\022\037\n\013active_only\030\002 \001(\010R\nactiveOnl"
+    "y\"w\n\024ListMyOrdersResponse\022.\n\004code\030\001 \001(\0162"
+    "\032.pandora.common.v1.ErrCodeR\004code\022/\n\006ord"
+    "ers\030\002 \003(\0132\027.pandora.trade.v1.OrderR\006orde"
+    "rs*\353\001\n\nOrderState\022\033\n\027ORDER_STATE_UNSPECI"
+    "FIED\020\000\022\027\n\023ORDER_STATE_PENDING\020\001\022\037\n\033ORDER"
+    "_STATE_BUYER_CONFIRMED\020\002\022 \n\034ORDER_STATE_"
+    "SELLER_CONFIRMED\020\003\022\031\n\025ORDER_STATE_COMPLE"
+    "TED\020\004\022\026\n\022ORDER_STATE_FAILED\020\005\022\027\n\023ORDER_S"
+    "TATE_EXPIRED\020\006\022\030\n\024ORDER_STATE_CANCELED\020\007"
+    "2\204\003\n\014TradeService\022Z\n\013CreateOrder\022$.pando"
+    "ra.trade.v1.CreateOrderRequest\032%.pandora"
+    ".trade.v1.CreateOrderResponse\022]\n\014Confirm"
+    "Order\022%.pandora.trade.v1.ConfirmOrderReq"
+    "uest\032&.pandora.trade.v1.ConfirmOrderResp"
+    "onse\022Z\n\013CancelOrder\022$.pandora.trade.v1.C"
+    "ancelOrderRequest\032%.pandora.trade.v1.Can"
+    "celOrderResponse\022]\n\014ListMyOrders\022%.pando"
+    "ra.trade.v1.ListMyOrdersRequest\032&.pandor"
+    "a.trade.v1.ListMyOrdersResponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
     descriptor_table_pandora_2ftrade_2fv1_2ftrade_2eproto_deps[1] = {
@@ -1800,7 +1840,7 @@ static ::absl::once_flag descriptor_table_pandora_2ftrade_2fv1_2ftrade_2eproto_o
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_pandora_2ftrade_2fv1_2ftrade_2eproto = {
     false,
     false,
-    1898,
+    2039,
     descriptor_table_protodef_pandora_2ftrade_2fv1_2ftrade_2eproto,
     "pandora/trade/v1/trade.proto",
     &descriptor_table_pandora_2ftrade_2fv1_2ftrade_2eproto_once,
@@ -1834,41 +1874,30 @@ TradeItem::TradeItem(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:pandora.trade.v1.TradeItem)
 }
-PROTOBUF_NDEBUG_INLINE TradeItem::Impl_::Impl_(
-    [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
-    [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
-    [[maybe_unused]] const ::pandora::trade::v1::TradeItem& from_msg)
-      : _has_bits_{from._has_bits_},
-        _cached_size_{0},
-        item_uid_(arena, from.item_uid_) {}
-
 TradeItem::TradeItem(
-    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
-    const TradeItem& from)
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const TradeItem& from)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-    : ::google::protobuf::Message(arena, TradeItem_get_class_data()) {
-
+    : ::google::protobuf::Message(arena, TradeItem_get_class_data()),
 #else   // PROTOBUF_CUSTOM_VTABLE
-    : ::google::protobuf::Message(arena) {
+    : ::google::protobuf::Message(arena),
 #endif  // PROTOBUF_CUSTOM_VTABLE
-  TradeItem* const _this = this;
-  (void)_this;
+      _impl_(from._impl_) {
   _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
       from._internal_metadata_);
-  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
-  _impl_.count_ = from._impl_.count_;
-
-  // @@protoc_insertion_point(copy_constructor:pandora.trade.v1.TradeItem)
 }
 PROTOBUF_NDEBUG_INLINE TradeItem::Impl_::Impl_(
     [[maybe_unused]] ::google::protobuf::internal::InternalVisibility visibility,
     [[maybe_unused]] ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
-      : _cached_size_{0},
-        item_uid_(arena) {}
+      : _cached_size_{0} {}
 
 inline void TradeItem::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  _impl_.count_ = {};
+  ::memset(reinterpret_cast<char*>(&_impl_) +
+               offsetof(Impl_, count_),
+           0,
+           offsetof(Impl_, item_config_id_) -
+               offsetof(Impl_, count_) +
+               sizeof(Impl_::item_config_id_));
 }
 TradeItem::~TradeItem() {
   // @@protoc_insertion_point(destructor:pandora.trade.v1.TradeItem)
@@ -1881,7 +1910,6 @@ inline void TradeItem::SharedDtor(MessageLite& self) {
   }
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
-  this_._impl_.item_uid_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -1919,10 +1947,11 @@ PROTOBUF_NOINLINE void TradeItem::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-    _impl_.item_uid_.ClearNonDefaultToEmpty();
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    ::memset(&_impl_.count_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.item_config_id_) -
+        reinterpret_cast<char*>(&_impl_.count_)) + sizeof(_impl_.item_config_id_));
   }
-  _impl_.count_ = 0;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -1946,22 +1975,21 @@ PROTOBUF_NOINLINE void TradeItem::Clear() {
   (void)cached_has_bits;
 
   cached_has_bits = this_._impl_._has_bits_[0];
-  // string item_uid = 1 [json_name = "itemUid"];
-  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-    if (!this_._internal_item_uid().empty()) {
-      const ::std::string& _s = this_._internal_item_uid();
-      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "pandora.trade.v1.TradeItem.item_uid");
-      target = stream->WriteStringMaybeAliased(1, _s, target);
-    }
-  }
-
   // int32 count = 2 [json_name = "count"];
-  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
     if (this_._internal_count() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<2>(
               stream, this_._internal_count(), target);
+    }
+  }
+
+  // uint32 item_config_id = 10 [json_name = "itemConfigId"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (this_._internal_item_config_id() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
+          10, this_._internal_item_config_id(), target);
     }
   }
 
@@ -1991,18 +2019,18 @@ PROTOBUF_NOINLINE void TradeItem::Clear() {
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
-    // string item_uid = 1 [json_name = "itemUid"];
-    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-      if (!this_._internal_item_uid().empty()) {
-        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
-                                        this_._internal_item_uid());
-      }
-    }
     // int32 count = 2 [json_name = "count"];
-    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       if (this_._internal_count() != 0) {
         total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
             this_._internal_count());
+      }
+    }
+    // uint32 item_config_id = 10 [json_name = "itemConfigId"];
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      if (this_._internal_item_config_id() != 0) {
+        total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
+            this_._internal_item_config_id());
       }
     }
   }
@@ -2025,17 +2053,13 @@ void TradeItem::MergeImpl(::google::protobuf::MessageLite& to_msg,
   cached_has_bits = from._impl_._has_bits_[0];
   if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-      if (!from._internal_item_uid().empty()) {
-        _this->_internal_set_item_uid(from._internal_item_uid());
-      } else {
-        if (_this->_impl_.item_uid_.IsDefault()) {
-          _this->_internal_set_item_uid("");
-        }
+      if (from._internal_count() != 0) {
+        _this->_impl_.count_ = from._impl_.count_;
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
-      if (from._internal_count() != 0) {
-        _this->_impl_.count_ = from._impl_.count_;
+      if (from._internal_item_config_id() != 0) {
+        _this->_impl_.item_config_id_ = from._impl_.item_config_id_;
       }
     }
   }
@@ -2054,12 +2078,14 @@ void TradeItem::CopyFrom(const TradeItem& from) {
 
 void TradeItem::InternalSwap(TradeItem* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
   using ::std::swap;
-  auto* arena = GetArena();
-  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
-  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.item_uid_, &other->_impl_.item_uid_, arena);
-  swap(_impl_.count_, other->_impl_.count_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.item_config_id_)
+      + sizeof(TradeItem::_impl_.item_config_id_)
+      - PROTOBUF_FIELD_OFFSET(TradeItem, _impl_.count_)>(
+          reinterpret_cast<char*>(&_impl_.count_),
+          reinterpret_cast<char*>(&other->_impl_.count_));
 }
 
 ::google::protobuf::Metadata TradeItem::GetMetadata() const {
@@ -2087,6 +2113,13 @@ PROTOBUF_NDEBUG_INLINE Order::Impl_::Impl_(
               ::pandora::trade::v1::Order,
               PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.items_)>()
           , from.items_
+        }
+        ,
+        buyer_items_ {
+          visibility, ::_pbi::InternalMetadataOffset::Build<
+              ::pandora::trade::v1::Order,
+              PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.buyer_items_)>()
+          , from.buyer_items_
         }
      {}
 
@@ -2121,6 +2154,11 @@ PROTOBUF_NDEBUG_INLINE Order::Impl_::Impl_(
         items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
             ::pandora::trade::v1::Order,
             PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.items_)>()
+         }
+        ,
+        buyer_items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::trade::v1::Order,
+            PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::Order, _impl_.buyer_items_)>()
          }
      {}
 
@@ -2181,14 +2219,20 @@ PROTOBUF_NOINLINE void Order::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-    _impl_.items_.Clear();
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      _impl_.items_.Clear();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      _impl_.buyer_items_.Clear();
+    }
   }
-  if (BatchCheckHasBit(cached_has_bits, 0x000000feU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x000000fcU)) {
     ::memset(&_impl_.order_id_, 0, static_cast<::size_t>(
-        reinterpret_cast<char*>(&_impl_.state_) -
-        reinterpret_cast<char*>(&_impl_.order_id_)) + sizeof(_impl_.state_));
+        reinterpret_cast<char*>(&_impl_.expires_at_ms_) -
+        reinterpret_cast<char*>(&_impl_.order_id_)) + sizeof(_impl_.expires_at_ms_));
   }
+  _impl_.state_ = 0;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -2213,7 +2257,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
 
   cached_has_bits = this_._impl_._has_bits_[0];
   // uint64 order_id = 1 [json_name = "orderId"];
-  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
     if (this_._internal_order_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2222,7 +2266,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // uint64 seller_id = 2 [json_name = "sellerId"];
-  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
     if (this_._internal_seller_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2231,7 +2275,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // uint64 buyer_id = 3 [json_name = "buyerId"];
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
     if (this_._internal_buyer_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2253,7 +2297,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // int64 price = 5 [json_name = "price"];
-  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
     if (this_._internal_price() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<5>(
@@ -2262,7 +2306,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // .pandora.trade.v1.OrderState state = 6 [json_name = "state"];
-  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
     if (this_._internal_state() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteEnumToArray(
@@ -2271,7 +2315,7 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // int64 created_at_ms = 7 [json_name = "createdAtMs"];
-  if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
     if (this_._internal_created_at_ms() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<7>(
@@ -2280,11 +2324,24 @@ PROTOBUF_NOINLINE void Order::Clear() {
   }
 
   // int64 expires_at_ms = 8 [json_name = "expiresAtMs"];
-  if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
     if (this_._internal_expires_at_ms() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<8>(
               stream, this_._internal_expires_at_ms(), target);
+    }
+  }
+
+  // repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    for (unsigned i = 0, n = static_cast<unsigned>(
+                             this_._internal_buyer_items_size());
+         i < n; i++) {
+      const auto& repfield = this_._internal_buyer_items().Get(i);
+      target =
+          ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+              10, repfield, repfield.GetCachedSize(),
+              target, stream);
     }
   }
 
@@ -2321,50 +2378,59 @@ PROTOBUF_NOINLINE void Order::Clear() {
         total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
       }
     }
-    // uint64 order_id = 1 [json_name = "orderId"];
+    // repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      total_size += 1UL * this_._internal_buyer_items_size();
+      for (const auto& msg : this_._internal_buyer_items()) {
+        total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+      }
+    }
+    // uint64 order_id = 1 [json_name = "orderId"];
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (this_._internal_order_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_order_id());
       }
     }
     // uint64 seller_id = 2 [json_name = "sellerId"];
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (this_._internal_seller_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_seller_id());
       }
     }
     // uint64 buyer_id = 3 [json_name = "buyerId"];
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (this_._internal_buyer_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_buyer_id());
       }
     }
     // int64 price = 5 [json_name = "price"];
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (this_._internal_price() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_price());
       }
     }
     // int64 created_at_ms = 7 [json_name = "createdAtMs"];
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (this_._internal_created_at_ms() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_created_at_ms());
       }
     }
     // int64 expires_at_ms = 8 [json_name = "expiresAtMs"];
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (this_._internal_expires_at_ms() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_expires_at_ms());
       }
     }
+  }
+   {
     // .pandora.trade.v1.OrderState state = 6 [json_name = "state"];
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (this_._internal_state() != 0) {
         total_size += 1 +
                       ::_pbi::WireFormatLite::EnumSize(this_._internal_state());
@@ -2396,39 +2462,44 @@ void Order::MergeImpl(::google::protobuf::MessageLite& to_msg,
           from._internal_items());
     }
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      _this->_internal_mutable_buyer_items()->InternalMergeFromWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), arena,
+          from._internal_buyer_items());
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (from._internal_order_id() != 0) {
         _this->_impl_.order_id_ = from._impl_.order_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (from._internal_seller_id() != 0) {
         _this->_impl_.seller_id_ = from._impl_.seller_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (from._internal_buyer_id() != 0) {
         _this->_impl_.buyer_id_ = from._impl_.buyer_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
       if (from._internal_price() != 0) {
         _this->_impl_.price_ = from._impl_.price_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000020U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
       if (from._internal_created_at_ms() != 0) {
         _this->_impl_.created_at_ms_ = from._impl_.created_at_ms_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000040U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
       if (from._internal_expires_at_ms() != 0) {
         _this->_impl_.expires_at_ms_ = from._impl_.expires_at_ms_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000080U)) {
-      if (from._internal_state() != 0) {
-        _this->_impl_.state_ = from._impl_.state_;
-      }
+  }
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
+    if (from._internal_state() != 0) {
+      _this->_impl_.state_ = from._impl_.state_;
     }
   }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -2449,6 +2520,7 @@ void Order::InternalSwap(Order* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.items_.InternalSwap(&other->_impl_.items_);
+  _impl_.buyer_items_.InternalSwap(&other->_impl_.buyer_items_);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Order, _impl_.state_)
       + sizeof(Order::_impl_.state_)
@@ -2483,6 +2555,13 @@ PROTOBUF_NDEBUG_INLINE CreateOrderRequest::Impl_::Impl_(
               PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.items_)>()
           , from.items_
         }
+        ,
+        buyer_items_ {
+          visibility, ::_pbi::InternalMetadataOffset::Build<
+              ::pandora::trade::v1::CreateOrderRequest,
+              PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.buyer_items_)>()
+          , from.buyer_items_
+        }
      {}
 
 CreateOrderRequest::CreateOrderRequest(
@@ -2516,6 +2595,11 @@ PROTOBUF_NDEBUG_INLINE CreateOrderRequest::Impl_::Impl_(
         items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
             ::pandora::trade::v1::CreateOrderRequest,
             PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.items_)>()
+         }
+        ,
+        buyer_items_ { visibility, ::_pbi::InternalMetadataOffset::Build<
+            ::pandora::trade::v1::CreateOrderRequest,
+            PROTOBUF_FIELD_OFFSET(::pandora::trade::v1::CreateOrderRequest, _impl_.buyer_items_)>()
          }
      {}
 
@@ -2576,10 +2660,15 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (CheckHasBit(cached_has_bits, 0x00000001U)) {
-    _impl_.items_.Clear();
+  if (BatchCheckHasBit(cached_has_bits, 0x00000003U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000001U)) {
+      _impl_.items_.Clear();
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      _impl_.buyer_items_.Clear();
+    }
   }
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000eU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001cU)) {
     ::memset(&_impl_.seller_id_, 0, static_cast<::size_t>(
         reinterpret_cast<char*>(&_impl_.price_) -
         reinterpret_cast<char*>(&_impl_.seller_id_)) + sizeof(_impl_.price_));
@@ -2608,7 +2697,7 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
 
   cached_has_bits = this_._impl_._has_bits_[0];
   // uint64 seller_id = 1 [json_name = "sellerId"];
-  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
     if (this_._internal_seller_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2617,7 +2706,7 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
   }
 
   // uint64 buyer_id = 2 [json_name = "buyerId"];
-  if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
     if (this_._internal_buyer_id() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
@@ -2639,11 +2728,24 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
   }
 
   // int64 price = 4 [json_name = "price"];
-  if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000010U)) {
     if (this_._internal_price() != 0) {
       target =
           ::google::protobuf::internal::WireFormatLite::WriteInt64ToArrayWithField<4>(
               stream, this_._internal_price(), target);
+    }
+  }
+
+  // repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
+  if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+    for (unsigned i = 0, n = static_cast<unsigned>(
+                             this_._internal_buyer_items_size());
+         i < n; i++) {
+      const auto& repfield = this_._internal_buyer_items().Get(i);
+      target =
+          ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+              5, repfield, repfield.GetCachedSize(),
+              target, stream);
     }
   }
 
@@ -2672,7 +2774,7 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
 
   ::_pbi::Prefetch5LinesFrom7Lines(&this_);
   cached_has_bits = this_._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
     // repeated .pandora.trade.v1.TradeItem items = 3 [json_name = "items"];
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       total_size += 1UL * this_._internal_items_size();
@@ -2680,22 +2782,29 @@ PROTOBUF_NOINLINE void CreateOrderRequest::Clear() {
         total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
       }
     }
-    // uint64 seller_id = 1 [json_name = "sellerId"];
+    // repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      total_size += 1UL * this_._internal_buyer_items_size();
+      for (const auto& msg : this_._internal_buyer_items()) {
+        total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+      }
+    }
+    // uint64 seller_id = 1 [json_name = "sellerId"];
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (this_._internal_seller_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_seller_id());
       }
     }
     // uint64 buyer_id = 2 [json_name = "buyerId"];
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (this_._internal_buyer_id() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
             this_._internal_buyer_id());
       }
     }
     // int64 price = 4 [json_name = "price"];
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (this_._internal_price() != 0) {
         total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
             this_._internal_price());
@@ -2720,23 +2829,28 @@ void CreateOrderRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
   (void)cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (BatchCheckHasBit(cached_has_bits, 0x0000000fU)) {
+  if (BatchCheckHasBit(cached_has_bits, 0x0000001fU)) {
     if (CheckHasBit(cached_has_bits, 0x00000001U)) {
       _this->_internal_mutable_items()->InternalMergeFromWithArena(
           ::google::protobuf::MessageLite::internal_visibility(), arena,
           from._internal_items());
     }
     if (CheckHasBit(cached_has_bits, 0x00000002U)) {
+      _this->_internal_mutable_buyer_items()->InternalMergeFromWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), arena,
+          from._internal_buyer_items());
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
       if (from._internal_seller_id() != 0) {
         _this->_impl_.seller_id_ = from._impl_.seller_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000004U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
       if (from._internal_buyer_id() != 0) {
         _this->_impl_.buyer_id_ = from._impl_.buyer_id_;
       }
     }
-    if (CheckHasBit(cached_has_bits, 0x00000008U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000010U)) {
       if (from._internal_price() != 0) {
         _this->_impl_.price_ = from._impl_.price_;
       }
@@ -2760,6 +2874,7 @@ void CreateOrderRequest::InternalSwap(CreateOrderRequest* PROTOBUF_RESTRICT PROT
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.items_.InternalSwap(&other->_impl_.items_);
+  _impl_.buyer_items_.InternalSwap(&other->_impl_.buyer_items_);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(CreateOrderRequest, _impl_.price_)
       + sizeof(CreateOrderRequest::_impl_.price_)

@@ -58,7 +58,7 @@ New-Item -ItemType Directory -Force -Path $BinDir, $LogDir | Out-Null
 # Profiles:
 #   login = 测登录/组队最小集(player_locator + hub_allocator + push + team + login)
 #   match = 完整主链路(在 login 基础上 + player + ds_allocator + battle_result + matchmaker)
-#   all   = 全部 17 个服务（含 social/friend、social/chat、social/dialogue、data/data_service、economy/trade、economy/inventory、economy/auction、runtime/leaderboard）
+#   all   = 全部 18 个服务（含 social/friend、social/chat、social/guild、social/dialogue、data/data_service、economy/trade、economy/inventory、economy/auction、runtime/leaderboard）
 $Services = @(
     @{ Name = 'player_locator'; Dir = 'services/runtime/player_locator';   Cmd = 'locator';        Conf = 'etc/locator-dev.yaml';        Port = 50006; Profiles = @('login', 'match', 'all') }
     @{ Name = 'hub_allocator';  Dir = 'services/battle/hub_allocator';      Cmd = 'hub_allocator';  Conf = 'etc/hub_allocator-dev.yaml';  Port = 50021; Profiles = @('login', 'match', 'all') }
@@ -68,6 +68,7 @@ $Services = @(
     @{ Name = 'team';           Dir = 'services/matchmaking/team';          Cmd = 'team';           Conf = 'etc/team-dev.yaml';           Port = 50010; Profiles = @('login', 'match', 'all') }
     @{ Name = 'friend';         Dir = 'services/social/friend';             Cmd = 'friend';         Conf = 'etc/friend-dev.yaml';         Port = 50004; Profiles = @('all') }
     @{ Name = 'chat';           Dir = 'services/social/chat';               Cmd = 'chat';           Conf = 'etc/chat-dev.yaml';           Port = 50005; Profiles = @('all') }
+    @{ Name = 'guild';          Dir = 'services/social/guild';              Cmd = 'guild';          Conf = 'etc/guild-dev.yaml';          Port = 50008; Profiles = @('all') }
     @{ Name = 'dialogue';       Dir = 'services/social/dialogue';           Cmd = 'dialogue';       Conf = 'etc/dialogue-dev.yaml';       Port = 50013; Profiles = @('all') }
     @{ Name = 'data_service';   Dir = 'services/data/data_service';         Cmd = 'data_service';   Conf = 'etc/data_service-dev.yaml';   Port = 50003; Profiles = @('all') }
     @{ Name = 'trade';          Dir = 'services/economy/trade';             Cmd = 'trade';          Conf = 'etc/trade-dev.yaml';          Port = 50012; Profiles = @('all') }

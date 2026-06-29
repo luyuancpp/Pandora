@@ -21,12 +21,21 @@ type FriendConf struct {
 	// LocatorAddr player_locator gRPC 地址(host:port)。
 	// 空 → ListFriends 不查在线状态(is_online 全 false,弱依赖)。
 	LocatorAddr string `yaml:"locator_addr,omitempty" json:"locator_addr,omitempty"`
+
+	// RecommendLimit 单次推荐好友数量(默认 10,硬上限 20,超界收敛到 20)。
+	RecommendLimit int `yaml:"recommend_limit,omitempty" json:"recommend_limit,omitempty"`
 }
 
 // Defaults 填默认值,防止 yaml 缺字段时零值引发非预期行为。
 func (c *Config) Defaults() {
 	if c.Friend.MaxFriends <= 0 {
 		c.Friend.MaxFriends = 200
+	}
+	if c.Friend.RecommendLimit <= 0 {
+		c.Friend.RecommendLimit = 10
+	}
+	if c.Friend.RecommendLimit > 20 {
+		c.Friend.RecommendLimit = 20
 	}
 	if c.Server.Grpc.Addr == "" {
 		c.Server.Grpc.Addr = ":50004"

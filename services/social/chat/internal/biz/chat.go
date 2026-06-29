@@ -1,16 +1,17 @@
 // Package biz 是 chat 服务的业务逻辑层(2026-06-16)。
 //
 // 职责(docs/design/go-services.md §2.5):
-//   - 三频道聊天:世界(WORLD)/ 队伍(TEAM)/ 私聊(PRIVATE)
+//   - 五频道聊天:世界(WORLD)/ 队伍(TEAM)/ 私聊(PRIVATE)/ 公会(GUILD)/ 临时群(GROUP)
 //   - 服务端校验:频道合法性 + 内容长度(utf8 rune ≤ MaxContentLen)+ 敏感词屏蔽
-//   - 私聊落 pandora_social(MySQL,支持离线 PullHistory)
-//   - 三频道经 kafka pandora.chat.{world,team,private} → push 推送(弱依赖)
-//   - 队伍频道成员经 team 服务 gRPC 解析(弱依赖)
+//   - 私聊落 pandora_social(MySQL,支持离线 PullHistory);公会 / 群是即时频道,不落聊天历史
+//   - 五频道经 kafka pandora.chat.{world,team,private,guild,group} → push 推送(弱依赖)
+//   - 队伍 / 公会 / 群成员经对应服务 gRPC 解析(弱依赖)
 //
 // 关键规则:
 //   - 客户端不能发 SYSTEM / UNSPECIFIED 频道 → ErrChatChannelInvalid
-//   - 推送原则 2:队伍 / 私聊只发收件方,不回发自己(客户端本地回显己方消息)
+//   - 推送原则 2:队伍 / 私聊 / 公会 / 群只发收件方,不回发自己(客户端本地回显己方消息)
 //   - 世界频道是广播:to_player_id=0,key 空,由 push 服务 Broadcast(原则 2 例外)
+//   - 公会 / 群聊历史不落库:即时频道,离线消息不补发(用户确认 2026-06-27)
 //   - sender_nickname 留空:由客户端按 sender_id 解析展示名(CLAUDE.md §5.8 最小数据单位)
 package biz
 
@@ -30,11 +31,13 @@ import (
 )
 
 // ChatPusher 把聊天推送事件发到 kafka(main.go 注入 kafkax 适配器;弱依赖,nil 时静默跳过)。
-// 三个方法对应三个 topic;key 由适配器按收件方 player_id 设置(世界频道 key 空)。
+// 五个方法对应五个 topic;key 由适配器按收件方 player_id 设置(世界频道 key 空)。
 type ChatPusher interface {
 	PushPrivate(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error
 	PushTeam(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error
 	PushWorld(ctx context.Context, evt *chatv1.ChatPushEvent) error
+	PushGuild(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error
+	PushGroup(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error
 }
 
 // TeamReader 解析队伍成员名单(main.go 注入 team gRPC 适配器;弱依赖,nil 时 TEAM 降级)。
@@ -42,11 +45,23 @@ type TeamReader interface {
 	GetTeamMembers(ctx context.Context, teamID uint64) ([]uint64, bool, error)
 }
 
+// GuildReader 解析公会成员名单(main.go 注入 guild gRPC 适配器;弱依赖,nil 时 GUILD 降级)。
+type GuildReader interface {
+	GetGuildMembers(ctx context.Context, guildID uint64) ([]uint64, bool, error)
+}
+
+// GroupReader 解析临时群成员名单(main.go 注入 group gRPC 适配器;弱依赖,nil 时 GROUP 降级)。
+type GroupReader interface {
+	GetGroupMembers(ctx context.Context, groupID uint64) ([]uint64, bool, error)
+}
+
 // ChatUsecase 是 chat 服务业务逻辑核心。
 type ChatUsecase struct {
 	repo   data.PrivateRepo
-	pusher ChatPusher // 弱依赖,可为 nil
-	team   TeamReader // 弱依赖,可为 nil
+	pusher ChatPusher  // 弱依赖,可为 nil
+	team   TeamReader  // 弱依赖,可为 nil
+	guild  GuildReader // 弱依赖,可为 nil
+	group  GroupReader // 弱依赖,可为 nil
 	cfg    conf.ChatConf
 
 	// router 是确定性 region/cell 路由器(scale-cellular-20m.md §4.2)。
@@ -56,15 +71,15 @@ type ChatUsecase struct {
 	router *cellroute.Router
 }
 
-// NewChatUsecase 构造。pusher / team 允许为 nil(弱依赖未配置时降级)。
-func NewChatUsecase(repo data.PrivateRepo, pusher ChatPusher, team TeamReader, cfg conf.ChatConf) *ChatUsecase {
+// NewChatUsecase 构造。pusher / team / guild / group 允许为 nil(弱依赖未配置时降级)。
+func NewChatUsecase(repo data.PrivateRepo, pusher ChatPusher, team TeamReader, guild GuildReader, group GroupReader, cfg conf.ChatConf) *ChatUsecase {
 	if cfg.MaxContentLen <= 0 {
 		cfg.MaxContentLen = 256
 	}
 	if cfg.HistoryLimit <= 0 {
 		cfg.HistoryLimit = 50
 	}
-	return &ChatUsecase{repo: repo, pusher: pusher, team: team, cfg: cfg}
+	return &ChatUsecase{repo: repo, pusher: pusher, team: team, guild: guild, group: group, cfg: cfg}
 }
 
 // SetCellRouter 注入确定性 region/cell 路由器(scale-cellular-20m.md §4.2 两级架构)。
@@ -90,11 +105,13 @@ func (u *ChatUsecase) SendMessage(
 		return 0, errcode.New(errcode.ErrInvalidArg, "sender required")
 	}
 
-	// 频道校验:客户端只能发 WORLD / TEAM / PRIVATE。
+	// 频道校验:客户端只能发 WORLD / TEAM / PRIVATE / GUILD / GROUP。
 	switch channel {
 	case chatv1.ChatChannel_CHAT_CHANNEL_WORLD,
 		chatv1.ChatChannel_CHAT_CHANNEL_TEAM,
-		chatv1.ChatChannel_CHAT_CHANNEL_PRIVATE:
+		chatv1.ChatChannel_CHAT_CHANNEL_PRIVATE,
+		chatv1.ChatChannel_CHAT_CHANNEL_GUILD,
+		chatv1.ChatChannel_CHAT_CHANNEL_GROUP:
 	default:
 		return 0, errcode.New(errcode.ErrChatChannelInvalid, "channel %d not allowed from client", channel)
 	}
@@ -125,6 +142,10 @@ func (u *ChatUsecase) SendMessage(
 		return u.sendPrivate(ctx, msg)
 	case chatv1.ChatChannel_CHAT_CHANNEL_TEAM:
 		return u.sendTeam(ctx, senderID, msg)
+	case chatv1.ChatChannel_CHAT_CHANNEL_GUILD:
+		return u.sendGuild(ctx, senderID, msg)
+	case chatv1.ChatChannel_CHAT_CHANNEL_GROUP:
+		return u.sendGroup(ctx, senderID, msg)
 	default: // WORLD
 		return u.sendWorld(ctx, msg)
 	}
@@ -203,6 +224,104 @@ func (u *ChatUsecase) sendTeam(ctx context.Context, senderID uint64, msg *chatv1
 		if perr := u.pusher.PushTeam(ctx, m, evt); perr != nil {
 			plog.With(ctx).Warnw("msg", "chat_team_push_failed",
 				"to_player_id", m, "team_id", teamID, "err", perr)
+		}
+	}
+	return msg.GetMessageId(), nil
+}
+
+// sendGuild 公会频道:target_id 即 guild_id;解析成员逐个推送(排除发送者,原则 2)。
+// guild / pusher 弱依赖,缺失时静默降级(消息不持久化,公会频道是即时频道,历史不落库)。
+func (u *ChatUsecase) sendGuild(ctx context.Context, senderID uint64, msg *chatv1.ChatMessage) (uint64, error) {
+	guildID := msg.GetTargetId()
+	if guildID == 0 {
+		return 0, errcode.New(errcode.ErrInvalidArg, "guild chat requires target_id (guild_id)")
+	}
+	if u.guild == nil || u.pusher == nil {
+		// 弱依赖未配置:不报错,返回 message_id(客户端本地回显),仅记一条 warn。
+		plog.With(ctx).Warnw("msg", "chat_guild_degraded", "guild_id", guildID,
+			"hint", "guild reader / pusher not configured, guild chat fan-out skipped")
+		return msg.GetMessageId(), nil
+	}
+
+	members, ok, err := u.guild.GetGuildMembers(ctx, guildID)
+	if err != nil {
+		// guild 服务暂时不可达:弱依赖降级,不阻断发送。
+		plog.With(ctx).Warnw("msg", "chat_guild_resolve_failed", "guild_id", guildID, "err", err)
+		return msg.GetMessageId(), nil
+	}
+	if !ok {
+		return 0, errcode.New(errcode.ErrChatChannelInvalid, "guild %d not found", guildID)
+	}
+
+	// 发送者必须是公会成员才能在公会频道说话。
+	inGuild := false
+	for _, m := range members {
+		if m == senderID {
+			inGuild = true
+			break
+		}
+	}
+	if !inGuild {
+		return 0, errcode.New(errcode.ErrChatChannelInvalid, "sender %d not in guild %d", senderID, guildID)
+	}
+
+	for _, m := range members {
+		if m == senderID {
+			continue // 原则 2:不回发自己
+		}
+		evt := &chatv1.ChatPushEvent{Message: msg, ToPlayerId: m}
+		if perr := u.pusher.PushGuild(ctx, m, evt); perr != nil {
+			plog.With(ctx).Warnw("msg", "chat_guild_push_failed",
+				"to_player_id", m, "guild_id", guildID, "err", perr)
+		}
+	}
+	return msg.GetMessageId(), nil
+}
+
+// sendGroup 临时群频道:target_id 即 group_id;解析成员逐个推送(排除发送者,原则 2)。
+// group / pusher 弱依赖,缺失时静默降级(消息不持久化,群频道是即时频道,历史不落库)。
+func (u *ChatUsecase) sendGroup(ctx context.Context, senderID uint64, msg *chatv1.ChatMessage) (uint64, error) {
+	groupID := msg.GetTargetId()
+	if groupID == 0 {
+		return 0, errcode.New(errcode.ErrInvalidArg, "group chat requires target_id (group_id)")
+	}
+	if u.group == nil || u.pusher == nil {
+		// 弱依赖未配置:不报错,返回 message_id(客户端本地回显),仅记一条 warn。
+		plog.With(ctx).Warnw("msg", "chat_group_degraded", "group_id", groupID,
+			"hint", "group reader / pusher not configured, group chat fan-out skipped")
+		return msg.GetMessageId(), nil
+	}
+
+	members, ok, err := u.group.GetGroupMembers(ctx, groupID)
+	if err != nil {
+		// group 服务暂时不可达:弱依赖降级,不阻断发送。
+		plog.With(ctx).Warnw("msg", "chat_group_resolve_failed", "group_id", groupID, "err", err)
+		return msg.GetMessageId(), nil
+	}
+	if !ok {
+		return 0, errcode.New(errcode.ErrChatChannelInvalid, "group %d not found", groupID)
+	}
+
+	// 发送者必须是群成员才能在群频道说话。
+	inGroup := false
+	for _, m := range members {
+		if m == senderID {
+			inGroup = true
+			break
+		}
+	}
+	if !inGroup {
+		return 0, errcode.New(errcode.ErrChatChannelInvalid, "sender %d not in group %d", senderID, groupID)
+	}
+
+	for _, m := range members {
+		if m == senderID {
+			continue // 原则 2:不回发自己
+		}
+		evt := &chatv1.ChatPushEvent{Message: msg, ToPlayerId: m}
+		if perr := u.pusher.PushGroup(ctx, m, evt); perr != nil {
+			plog.With(ctx).Warnw("msg", "chat_group_push_failed",
+				"to_player_id", m, "group_id", groupID, "err", perr)
 		}
 	}
 	return msg.GetMessageId(), nil

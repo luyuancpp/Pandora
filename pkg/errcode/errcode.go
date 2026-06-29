@@ -12,7 +12,7 @@
 //	6000-6999   = battle_result
 //	7000-7999   = trade
 //	8000-8999   = dialogue
-//	9000-9999   = chat / friend / locator
+//	9000-9999   = chat / friend / locator / push / guild / group
 //	10000-10999 = data_service
 //	11000-11999 = 预留
 //	12000-12999 = auction(全服拍卖行 / 撮合)
@@ -151,6 +151,23 @@ const (
 	ErrPushOfflineCorrupted Code = 9301 // 离线 ZSET 数据损坏(反序列化失败) / offline.Append 写 redis 失败(W3 ④ 二次修复)
 	// ErrPushKafkaConsumerDown 由 W4 push 健康检查 / consumer group rebalance handler 触发上报,W3 ④ 仅占位。
 	ErrPushKafkaConsumerDown Code = 9302 // kafka consumer 异常下线
+
+	// guild 公会(9400-9499,2026-06-27)
+	ErrGuildNotFound       Code = 9401 // 公会不存在
+	ErrGuildAlreadyInGuild Code = 9402 // 玩家已在某公会(单归属)
+	ErrGuildFull           Code = 9403 // 公会成员已达上限
+	ErrGuildNotLeader      Code = 9404 // 操作需会长权限(解散 / 转让 / 任命)
+	ErrGuildNoPermission   Code = 9405 // 无权限(审批 / 踢人需会长或官员)
+	ErrGuildNameTaken      Code = 9406 // 公会名已被占用
+	ErrGuildRequestInvalid Code = 9407 // 加入申请不存在 / 非 pending
+	ErrGuildNotMember      Code = 9408 // 目标不在本公会
+
+	// group 临时群(9500-9599,2026-06-27)
+	ErrGroupNotFound  Code = 9501 // 群不存在
+	ErrGroupFull      Code = 9502 // 群成员已达上限
+	ErrGroupNotOwner  Code = 9503 // 操作需群主权限(解散 / 转让 / 踢人)
+	ErrGroupNotMember Code = 9504 // 玩家不在群内
+	ErrGroupAlreadyIn Code = 9505 // 玩家已在群内(拉人幂等命中)
 )
 
 // data_service(10000-10999)

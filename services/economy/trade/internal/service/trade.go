@@ -39,7 +39,7 @@ func (s *TradeService) CreateOrder(ctx context.Context, req *tradev1.CreateOrder
 		return &tradev1.CreateOrderResponse{Code: commonv1.ErrCode_ERR_UNAUTHORIZED}, nil
 	}
 
-	orderID, err := s.uc.CreateOrder(ctx, sellerID, req.GetBuyerId(), req.GetItems(), req.GetPrice())
+	orderID, err := s.uc.CreateOrder(ctx, sellerID, req.GetBuyerId(), req.GetItems(), req.GetBuyerItems(), req.GetPrice())
 	if err != nil {
 		return &tradev1.CreateOrderResponse{Code: toProtoCode(err)}, nil
 	}

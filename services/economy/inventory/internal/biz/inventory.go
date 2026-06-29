@@ -211,6 +211,62 @@ func (u *InventoryUsecase) SettleAuctionMatch(ctx context.Context, matchID, sell
 	return nil
 }
 
+// SettlePlayerTrade 原子结算一笔玩家间点对点交易(系统驱动,幂等键基于 order_id)。
+//
+// 在 inventory 一个本地事务里从双方活跃余额扣转完成对转(无 escrow 预冻结):
+//   - 卖家:交付 sellerItems 给买家,收 buyerItems + price 金币;
+//   - 买家:交付 buyerItems + price 金币给卖家,收 sellerItems。
+//
+// 与拍卖不同,P2P 无预冻结,任一方资产不足 → ErrInventoryInsufficient,整笔回滚(成交失败)。
+// 幂等键 = "trade:settle:<order_id>",同一订单重复结算只生效一次(不变量 §9.7)。
+func (u *InventoryUsecase) SettlePlayerTrade(ctx context.Context, orderID, sellerID, buyerID uint64, sellerItems, buyerItems []data.ItemGrant, price int64) error {
+	if orderID == 0 {
+		return errcode.New(errcode.ErrInvalidArg, "order_id required")
+	}
+	if sellerID == 0 || buyerID == 0 {
+		return errcode.New(errcode.ErrInvalidArg, "seller_id / buyer_id required")
+	}
+	if sellerID == buyerID {
+		// 自交易净额为零且会让同一玩家同 key 写两条流水冲突;视为非法。
+		return errcode.New(errcode.ErrInvalidArg, "seller and buyer must differ: %d", sellerID)
+	}
+	if price < 0 {
+		return errcode.New(errcode.ErrInvalidArg, "price must not be negative")
+	}
+	if len(sellerItems) == 0 && len(buyerItems) == 0 && price == 0 {
+		return errcode.New(errcode.ErrInvalidArg, "nothing to settle")
+	}
+	validate := func(items []data.ItemGrant, side string) error {
+		for _, it := range items {
+			if it.ItemConfigID == 0 {
+				return errcode.New(errcode.ErrInvalidArg, "%s item_config_id required", side)
+			}
+			if it.Count <= 0 {
+				return errcode.New(errcode.ErrInvalidArg, "%s count must be positive: item=%d", side, it.ItemConfigID)
+			}
+		}
+		return nil
+	}
+	if err := validate(sellerItems, "seller"); err != nil {
+		return err
+	}
+	if err := validate(buyerItems, "buyer"); err != nil {
+		return err
+	}
+	idempotencyKey := fmt.Sprintf("trade:settle:%d", orderID)
+	detail := fmt.Sprintf("trade settle order=%d seller_items=%d buyer_items=%d price=%d",
+		orderID, len(sellerItems), len(buyerItems), price)
+	already, err := u.repo.SettlePlayerTrade(ctx, orderID, sellerID, buyerID, sellerItems, buyerItems, price, idempotencyKey, detail)
+	if err != nil {
+		return err
+	}
+	if already {
+		plog.With(ctx).Infow("msg", "trade_settle_idempotent_hit",
+			"order_id", orderID, "seller_id", sellerID, "buyer_id", buyerID, "price", price)
+	}
+	return nil
+}
+
 // FreezeForOrder 拍卖挂单冻结资产(系统驱动,幂等键 = order_id)。
 //
 // SELL:冻结 quantity 个 itemConfigID(卖家下架道具);BUY:冻结 quantity*unitPrice 金币(买家锁价)。

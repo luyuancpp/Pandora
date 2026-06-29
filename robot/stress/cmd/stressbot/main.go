@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sort"
 	"sync"
 	"syscall"
 	"time"
@@ -109,10 +110,13 @@ func main() {
 		cancel()
 	}()
 
-	// 指标落盘 goroutine。
+	// 指标落盘 goroutine。collector 的停止信号刻意与 ctx 解耦:ctx 一取消 VU 才开始排空,
+	// 若此时就写最终快照,会把还在收敛的 VU 漏记(最终行 vu_online≠0、error 计数不全)。
+	// 改为等 VU 全部退出(wg.Wait)后再关 collectorStop,保证最终 jsonl 行计数完整。
+	collectorStop := make(chan struct{})
 	statsDone := make(chan struct{})
 	go func() {
-		collector.Run(ctx.Done(), func(e error) { logger.Warn("写 robot-stats.jsonl 失败", "err", e) })
+		collector.Run(collectorStop, func(e error) { logger.Warn("写 robot-stats.jsonl 失败", "err", e) })
 		close(statsDone)
 	}()
 
@@ -156,6 +160,39 @@ func main() {
 wait:
 	wg.Wait()
 	cancel()
+	// VU 已全部退出,现在才让 collector 写最终快照(vu_online=0,error/drain 计数完整),
+	// 再等它收尾。这样最终 jsonl 行与下面的分项统计口径一致。
+	close(collectorStop)
 	<-statsDone
+
+	// 收尾按调用点归因打印两类计数:
+	//   1) RPC error 分项 = 真实后端错误(含 DeadlineExceeded 等),是要关注的质量信号。
+	//   2) 关停排空 canceled 分项 = ctx 取消中断的在途 RPC,非后端错误,单列便于区分。
+	// 都按计数降序排列,便于直接定位落在哪些 RPC,不用对日志手 grep。
+	logBreakdown := func(title string, total int64, m map[string]int64) {
+		if len(m) == 0 {
+			logger.Info(title, "total", total)
+			return
+		}
+		ops := make([]string, 0, len(m))
+		for op := range m {
+			ops = append(ops, op)
+		}
+		sort.Slice(ops, func(i, j int) bool {
+			if m[ops[i]] != m[ops[j]] {
+				return m[ops[i]] > m[ops[j]]
+			}
+			return ops[i] < ops[j]
+		})
+		attrs := make([]any, 0, len(ops)+1)
+		attrs = append(attrs, "total", total)
+		for _, op := range ops {
+			attrs = append(attrs, op, m[op])
+		}
+		logger.Info(title, attrs...)
+	}
+	logBreakdown("RPC error 分项(真实后端错误)", collector.Counters.RPCErrors.Load(), collector.ErrorBreakdown())
+	logBreakdown("关停排空 canceled 分项(非后端错误)", collector.Counters.DrainCanceled.Load(), collector.DrainBreakdown())
+
 	logger.Info("压测进程结束")
 }

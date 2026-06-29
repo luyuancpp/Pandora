@@ -39,6 +39,14 @@ const (
 	// key=player_id;原则 2:只发接收方
 	TopicChatPrivate = "pandora.chat.private"
 
+	// TopicChatGuild — proto: pandora.chat.v1.ChatPushEvent
+	// key=接收方 player_id;原则 2:只发收件方(公会频道 fan-out,即时不落库)
+	TopicChatGuild = "pandora.chat.guild"
+
+	// TopicChatGroup — proto: pandora.chat.v1.ChatPushEvent
+	// key=接收方 player_id;原则 2:只发收件方(临时群频道 fan-out,即时不落库)
+	TopicChatGroup = "pandora.chat.group"
+
 	// TopicPlayerUpdate — proto: pandora.player.v1.PlayerUpdateEvent(W3+ 补)
 	// key=player_id;玩家档案变更通知(MMR/昵称/英雄池)
 	TopicPlayerUpdate = "pandora.player.update"
@@ -46,6 +54,10 @@ const (
 	// TopicFriendEvent — proto: pandora.friend.v1.FriendEvent
 	// key=to_player_id;原则 2:发给接收方(好友请求 / 接受通知)
 	TopicFriendEvent = "pandora.friend.event"
+
+	// TopicGuildEvent — proto: pandora.guild.v1.GuildEvent
+	// key=to_player_id;原则 2:发给接收方(公会申请 / 审批 / 踢人 / 解散通知)
+	TopicGuildEvent = "pandora.guild.event"
 
 	// TopicSystemNotify — proto: pandora.system.v1.SystemNotifyEvent(W3+ 补)
 	// 广播类(key 可空);系统公告 / 邮件红点 / 运营推送
@@ -100,8 +112,11 @@ var PushTopics = []string{
 	TopicChatPrivate,
 	TopicChatTeam,
 	TopicChatWorld,
+	TopicChatGuild,
+	TopicChatGroup,
 	TopicHubMigrate,
 	TopicFriendEvent,
+	TopicGuildEvent,
 	TopicPresenceUpdate,
 }
 

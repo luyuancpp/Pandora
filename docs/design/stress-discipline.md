@@ -10,6 +10,7 @@
 4. **结果文档复用脚本输出表格,不贴 raw count/sum 数字**
 5. **压期间不上传任何日志**
 6. **每次登录压测把所有 redis/mysql/etcd 数据全部删除再开新一轮**
+7. **单 Cell 回归压测每周固定跑一轮**(见 §10),周对周对比,持续守住性能基线、尽早暴露退化
 
 ## 2. 压测目录结构
 
@@ -245,3 +246,35 @@ Windows 批量启动示例:
 1. 先用服务端 Bot 测单 DS 玩法承载。
 2. 再用无渲染 UE Client Bot 测真实连接、Replication、进出 DS。
 3. 最后用轻量协议 Robot 单独压后端接口极限。
+
+## 10. 单 Cell 回归压测节奏(每周固定)
+
+> 缘起:`scale-cellular-20m.md` §7 把「单 Cell ~40 万 CCU 压测 + 对比表」定为阶段1→阶段2 的**一次性上线验收门槛**。蜂窝扩容服务内代码(④~⑱ + `pkg/cellroute` 地基)已全部落地,故把这道门槛**升级为每周固定回归基线**:既能持续守住性能、尽早暴露退化,又天然复用 §4.1 的 `prev-summary` 周对周对比机制。
+
+### 10.1 节奏与产物
+
+- **频率**:每周一轮,固定档期(建议每周一稳定窗口跑,周内不被需求挤掉)。
+- **baseline**:上一周 `summary.txt` 即本周 `prev-summary.txt`(§4.1),**每周一个 baseline**,周对周二维对比。
+- **产物**:`docs/design/stress-<round>-cell-weekly-<date>.md`(命名沿用 §7),含 summarize 五段表 + vs 上周对比 + 瓶颈/决策行;同步追加 `PROGRESS.md`。
+- **退化即停**:任一关键指标(match.found 链路 / `ds_pod_ready_p99` / `hub_player_count` / battle_result kafka lag)较上周明显劣化,**先定位再继续迭代**,不许带着退化往下压。
+
+### 10.2 规模随环境(重要边界)
+
+- §7 阶段1 的「单 Cell ~40 万 CCU」是**大规模目标**,需相应规模环境(多机/集群,属基础设施,Codex/人,AGENTS.md §11.1)。
+- 该环境就绪前,每周跑**力所能及规模的回归压测**(当前 dev/小规模),规模随环境能力逐步抬升。
+- **达到 ~40 万 CCU 且出对比表前,「每周都在压」≠「已过阶段1 验收门槛」**;阶段门槛仍按 §7 单独验收,不因周回归已常态化而默认通过。
+
+### 10.3 每周执行清单(在 §4.4 基础上)
+
+```
+[ ] 沿用 §4.4 完整清单(prev-summary / 清库 / 清 DS / snapshot×3 / 五段表 / 对比表 / 决策行 / PROGRESS)
+[ ] 本周 RunDir 命名带周次/日期,baseline 取上周 summary
+[ ] 对比维度固定:match.found 链路 / ds_pod_ready_p99 / hub_player_count / battle_result kafka lag
+[ ] 规模标注当前环境上限,不把小规模结论冒充 40 万 CCU 验收
+[ ] 出现退化先开 issue 定位,再决定是否继续迭代
+```
+
+### 10.4 执行分工
+
+- **实际每周跑压测 = 环境操作**:清库/起服务/拉 DS/抓 snapshot 属 Codex/人(AGENTS.md §11.1)。
+- **本纪律 + summarize/对比分析 + 退化定位**:Claude 可参与(纯文档/脚本/分析,不碰环境)。

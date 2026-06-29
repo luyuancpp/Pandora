@@ -190,6 +190,30 @@ extern const ::google::protobuf::internal::ClassDataFull ListFriendsResponse_cla
 #else
 extern const ListFriendsResponseGlobalsTypeInternal ListFriendsResponse_globals_;
 #endif  // PROTOBUF_MESSAGE_GLOBALS
+class RecommendFriendsRequest;
+struct RecommendFriendsRequestGlobalsTypeInternal;
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+extern RecommendFriendsRequestGlobalsTypeInternal RecommendFriendsRequest_globals_;
+extern const ::google::protobuf::internal::ClassDataFull RecommendFriendsRequest_class_data_;
+#else
+extern const RecommendFriendsRequestGlobalsTypeInternal RecommendFriendsRequest_globals_;
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+class RecommendFriendsResponse;
+struct RecommendFriendsResponseGlobalsTypeInternal;
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+extern RecommendFriendsResponseGlobalsTypeInternal RecommendFriendsResponse_globals_;
+extern const ::google::protobuf::internal::ClassDataFull RecommendFriendsResponse_class_data_;
+#else
+extern const RecommendFriendsResponseGlobalsTypeInternal RecommendFriendsResponse_globals_;
+#endif  // PROTOBUF_MESSAGE_GLOBALS
+class RecommendedFriendInfo;
+struct RecommendedFriendInfoGlobalsTypeInternal;
+#ifndef PROTOBUF_MESSAGE_GLOBALS
+extern RecommendedFriendInfoGlobalsTypeInternal RecommendedFriendInfo_globals_;
+extern const ::google::protobuf::internal::ClassDataFull RecommendedFriendInfo_class_data_;
+#else
+extern const RecommendedFriendInfoGlobalsTypeInternal RecommendedFriendInfo_globals_;
+#endif  // PROTOBUF_MESSAGE_GLOBALS
 class RejectFriendRequest;
 struct RejectFriendRequestGlobalsTypeInternal;
 #ifndef PROTOBUF_MESSAGE_GLOBALS
@@ -1589,6 +1613,496 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED RejectFriendRequest final : public 
 };
 // -------------------------------------------------------------------
 
+class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED RecommendedFriendInfo final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:pandora.friend.v1.RecommendedFriendInfo) */ {
+ public:
+  inline RecommendedFriendInfo() : RecommendedFriendInfo(nullptr) {}
+  ~RecommendedFriendInfo() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(RecommendedFriendInfo* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(RecommendedFriendInfo));
+  }
+#endif
+
+  template <typename = void>
+  explicit constexpr RecommendedFriendInfo(::google::protobuf::internal::ConstantInitialized,
+                           const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+                               class_data);
+
+  inline RecommendedFriendInfo(const RecommendedFriendInfo& from) : RecommendedFriendInfo(nullptr, from) {}
+  inline RecommendedFriendInfo(RecommendedFriendInfo&& from) noexcept : RecommendedFriendInfo(nullptr, ::std::move(from)) {}
+  inline RecommendedFriendInfo& operator=(const RecommendedFriendInfo& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RecommendedFriendInfo& operator=(RecommendedFriendInfo&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  [[nodiscard]] inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  [[nodiscard]] inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL
+  mutable_unknown_fields() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL
+  GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  [[nodiscard]] static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  [[nodiscard]] static const RecommendedFriendInfo& default_instance() {
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<RecommendedFriendInfo>(&RecommendedFriendInfo_globals_);
+  }
+  static constexpr int kIndexInFileMessages = 21;
+  friend void swap(RecommendedFriendInfo& a, RecommendedFriendInfo& b) { a.Swap(&b); }
+  inline void Swap(RecommendedFriendInfo* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RecommendedFriendInfo* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  [[nodiscard]] RecommendedFriendInfo* PROTOBUF_NONNULL
+  New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<RecommendedFriendInfo>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const RecommendedFriendInfo& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const RecommendedFriendInfo& from) { RecommendedFriendInfo::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  [[nodiscard]] bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  [[nodiscard]] static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  [[nodiscard]] static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  [[nodiscard]] ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] ::size_t ByteSizeLong() const final;
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] int GetCachedSize() const {
+    return _impl_._cached_size_.Get();
+  }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(RecommendedFriendInfo* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "pandora.friend.v1.RecommendedFriendInfo"; }
+
+  explicit RecommendedFriendInfo(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  RecommendedFriendInfo(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const RecommendedFriendInfo& from);
+  RecommendedFriendInfo(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, RecommendedFriendInfo&& from) noexcept
+      : RecommendedFriendInfo(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_(
+      const MessageLite& prototype,
+      const ::google::protobuf::internal::TcParseTableBase* PROTOBUF_NULLABLE tc_table = nullptr);
+
+  [[nodiscard]] ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kNicknameFieldNumber = 2,
+    kPlayerIdFieldNumber = 1,
+    kLastSeenMsFieldNumber = 4,
+    kIsOnlineFieldNumber = 3,
+    kMutualFriendCountFieldNumber = 5,
+  };
+  // string nickname = 2 [json_name = "nickname"];
+  void clear_nickname() ;
+  [[nodiscard]] const ::std::string& nickname() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_nickname(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_nickname();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_nickname();
+  void set_allocated_nickname(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_nickname() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_nickname(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_nickname();
+
+  public:
+  // uint64 player_id = 1 [json_name = "playerId"];
+  void clear_player_id() ;
+  [[nodiscard]] ::uint64_t player_id() const;
+  void set_player_id(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_player_id() const;
+  void _internal_set_player_id(::uint64_t value);
+
+  public:
+  // int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+  void clear_last_seen_ms() ;
+  [[nodiscard]] ::int64_t last_seen_ms() const;
+  void set_last_seen_ms(::int64_t value);
+
+  private:
+  ::int64_t _internal_last_seen_ms() const;
+  void _internal_set_last_seen_ms(::int64_t value);
+
+  public:
+  // bool is_online = 3 [json_name = "isOnline"];
+  void clear_is_online() ;
+  [[nodiscard]] bool is_online() const;
+  void set_is_online(bool value);
+
+  private:
+  bool _internal_is_online() const;
+  void _internal_set_is_online(bool value);
+
+  public:
+  // uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+  void clear_mutual_friend_count() ;
+  [[nodiscard]] ::uint32_t mutual_friend_count() const;
+  void set_mutual_friend_count(::uint32_t value);
+
+  private:
+  ::uint32_t _internal_mutual_friend_count() const;
+  void _internal_set_mutual_friend_count(::uint32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:pandora.friend.v1.RecommendedFriendInfo)
+ private:
+  class _Internal;
+  using ParseTableT_ =
+      ::google::protobuf::internal::TcParseTable<3, 5,
+                          0, 56,
+                          2>;
+  static constexpr ParseTableT_ InternalGenerateParseTable_(
+      const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
+  friend class ::google::protobuf::internal::TcParser;
+  #ifndef PROTOBUF_MESSAGE_GLOBALS
+  static const ParseTableT_ _table_;
+  #endif
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  friend ::google::protobuf::internal::PrivateAccess;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                                    ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const RecommendedFriendInfo& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::internal::ArenaStringPtr nickname_;
+    ::uint64_t player_id_;
+    ::int64_t last_seen_ms_;
+    bool is_online_;
+    ::uint32_t mutual_friend_count_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_pandora_2ffriend_2fv1_2ffriend_2eproto;
+};
+// -------------------------------------------------------------------
+
+class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED RecommendFriendsRequest final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:pandora.friend.v1.RecommendFriendsRequest) */ {
+ public:
+  inline RecommendFriendsRequest() : RecommendFriendsRequest(nullptr) {}
+  ~RecommendFriendsRequest() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(RecommendFriendsRequest* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(RecommendFriendsRequest));
+  }
+#endif
+
+  template <typename = void>
+  explicit constexpr RecommendFriendsRequest(::google::protobuf::internal::ConstantInitialized,
+                           const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+                               class_data);
+
+  inline RecommendFriendsRequest(const RecommendFriendsRequest& from) : RecommendFriendsRequest(nullptr, from) {}
+  inline RecommendFriendsRequest(RecommendFriendsRequest&& from) noexcept : RecommendFriendsRequest(nullptr, ::std::move(from)) {}
+  inline RecommendFriendsRequest& operator=(const RecommendFriendsRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RecommendFriendsRequest& operator=(RecommendFriendsRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  [[nodiscard]] inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  [[nodiscard]] inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL
+  mutable_unknown_fields() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL
+  GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  [[nodiscard]] static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  [[nodiscard]] static const RecommendFriendsRequest& default_instance() {
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<RecommendFriendsRequest>(&RecommendFriendsRequest_globals_);
+  }
+  static constexpr int kIndexInFileMessages = 22;
+  friend void swap(RecommendFriendsRequest& a, RecommendFriendsRequest& b) { a.Swap(&b); }
+  inline void Swap(RecommendFriendsRequest* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RecommendFriendsRequest* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  [[nodiscard]] RecommendFriendsRequest* PROTOBUF_NONNULL
+  New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<RecommendFriendsRequest>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const RecommendFriendsRequest& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const RecommendFriendsRequest& from) { RecommendFriendsRequest::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  [[nodiscard]] bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  [[nodiscard]] static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  [[nodiscard]] static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  [[nodiscard]] ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] ::size_t ByteSizeLong() const final;
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] int GetCachedSize() const {
+    return _impl_._cached_size_.Get();
+  }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(RecommendFriendsRequest* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "pandora.friend.v1.RecommendFriendsRequest"; }
+
+  explicit RecommendFriendsRequest(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  RecommendFriendsRequest(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const RecommendFriendsRequest& from);
+  RecommendFriendsRequest(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, RecommendFriendsRequest&& from) noexcept
+      : RecommendFriendsRequest(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_(
+      const MessageLite& prototype,
+      const ::google::protobuf::internal::TcParseTableBase* PROTOBUF_NULLABLE tc_table = nullptr);
+
+  [[nodiscard]] ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kExcludePlayerIdsFieldNumber = 3,
+    kPlayerIdFieldNumber = 1,
+    kLimitFieldNumber = 2,
+  };
+  // repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+  [[nodiscard]] int exclude_player_ids_size()
+      const;
+  private:
+  int _internal_exclude_player_ids_size() const;
+
+  public:
+  void clear_exclude_player_ids() ;
+  [[nodiscard]] ::uint64_t exclude_player_ids(int index) const;
+  void set_exclude_player_ids(int index, ::uint64_t value);
+  void add_exclude_player_ids(::uint64_t value);
+  [[nodiscard]] const ::google::protobuf::RepeatedField<::uint64_t>& exclude_player_ids()
+      const;
+  ::google::protobuf::RepeatedField<::uint64_t>* PROTOBUF_NONNULL mutable_exclude_player_ids();
+
+  private:
+  const ::google::protobuf::RepeatedField<::uint64_t>& _internal_exclude_player_ids() const;
+  ::google::protobuf::RepeatedField<::uint64_t>* PROTOBUF_NONNULL _internal_mutable_exclude_player_ids();
+
+  public:
+  // uint64 player_id = 1 [json_name = "playerId"];
+  void clear_player_id() ;
+  [[nodiscard]] ::uint64_t player_id() const;
+  void set_player_id(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_player_id() const;
+  void _internal_set_player_id(::uint64_t value);
+
+  public:
+  // uint32 limit = 2 [json_name = "limit"];
+  void clear_limit() ;
+  [[nodiscard]] ::uint32_t limit() const;
+  void set_limit(::uint32_t value);
+
+  private:
+  ::uint32_t _internal_limit() const;
+  void _internal_set_limit(::uint32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:pandora.friend.v1.RecommendFriendsRequest)
+ private:
+  class _Internal;
+  using ParseTableT_ =
+      ::google::protobuf::internal::TcParseTable<2, 3,
+                          0, 0,
+                          2>;
+  static constexpr ParseTableT_ InternalGenerateParseTable_(
+      const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
+  friend class ::google::protobuf::internal::TcParser;
+  #ifndef PROTOBUF_MESSAGE_GLOBALS
+  static const ParseTableT_ _table_;
+  #endif
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  friend ::google::protobuf::internal::PrivateAccess;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                                    ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const RecommendFriendsRequest& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::RepeatedField<::uint64_t> exclude_player_ids_;
+    ::google::protobuf::internal::CachedSize _exclude_player_ids_cached_byte_size_;
+    ::uint64_t player_id_;
+    ::uint32_t limit_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_pandora_2ffriend_2fv1_2ffriend_2eproto;
+};
+// -------------------------------------------------------------------
+
 class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ListFriendsRequest final : public ::google::protobuf::Message
 /* @@protoc_insertion_point(class_definition:pandora.friend.v1.ListFriendsRequest) */ {
  public:
@@ -2744,7 +3258,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED FriendEvent final : public ::google
   [[nodiscard]] static const FriendEvent& default_instance() {
     return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<FriendEvent>(&FriendEvent_globals_);
   }
-  static constexpr int kIndexInFileMessages = 21;
+  static constexpr int kIndexInFileMessages = 24;
   friend void swap(FriendEvent& a, FriendEvent& b) { a.Swap(&b); }
   inline void Swap(FriendEvent* PROTOBUF_NONNULL other) {
     if (other == this) return;
@@ -4414,6 +4928,230 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED AcceptFriendRequest final : public 
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::uint64_t player_id_;
     ::uint64_t request_id_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_pandora_2ffriend_2fv1_2ffriend_2eproto;
+};
+// -------------------------------------------------------------------
+
+class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED RecommendFriendsResponse final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:pandora.friend.v1.RecommendFriendsResponse) */ {
+ public:
+  inline RecommendFriendsResponse() : RecommendFriendsResponse(nullptr) {}
+  ~RecommendFriendsResponse() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(RecommendFriendsResponse* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(RecommendFriendsResponse));
+  }
+#endif
+
+  template <typename = void>
+  explicit constexpr RecommendFriendsResponse(::google::protobuf::internal::ConstantInitialized,
+                           const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+                               class_data);
+
+  inline RecommendFriendsResponse(const RecommendFriendsResponse& from) : RecommendFriendsResponse(nullptr, from) {}
+  inline RecommendFriendsResponse(RecommendFriendsResponse&& from) noexcept : RecommendFriendsResponse(nullptr, ::std::move(from)) {}
+  inline RecommendFriendsResponse& operator=(const RecommendFriendsResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RecommendFriendsResponse& operator=(RecommendFriendsResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  [[nodiscard]] inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  [[nodiscard]] inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL
+  mutable_unknown_fields() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  [[nodiscard]] static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL
+  GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  [[nodiscard]] static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  [[nodiscard]] static const RecommendFriendsResponse& default_instance() {
+    return *::google::protobuf::internal::MessageGlobalsBase::ToDefaultInstance<RecommendFriendsResponse>(&RecommendFriendsResponse_globals_);
+  }
+  static constexpr int kIndexInFileMessages = 23;
+  friend void swap(RecommendFriendsResponse& a, RecommendFriendsResponse& b) { a.Swap(&b); }
+  inline void Swap(RecommendFriendsResponse* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RecommendFriendsResponse* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  [[nodiscard]] RecommendFriendsResponse* PROTOBUF_NONNULL
+  New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<RecommendFriendsResponse>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const RecommendFriendsResponse& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const RecommendFriendsResponse& from) { RecommendFriendsResponse::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  [[nodiscard]] bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  [[nodiscard]] static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  [[nodiscard]] static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  [[nodiscard]] ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] ::size_t ByteSizeLong() const final;
+  [[nodiscard]] ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  [[nodiscard]] int GetCachedSize() const {
+    return _impl_._cached_size_.Get();
+  }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(RecommendFriendsResponse* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "pandora.friend.v1.RecommendFriendsResponse"; }
+
+  explicit RecommendFriendsResponse(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  RecommendFriendsResponse(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const RecommendFriendsResponse& from);
+  RecommendFriendsResponse(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, RecommendFriendsResponse&& from) noexcept
+      : RecommendFriendsResponse(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_(
+      const MessageLite& prototype,
+      const ::google::protobuf::internal::TcParseTableBase* PROTOBUF_NULLABLE tc_table = nullptr);
+
+  [[nodiscard]] ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kRecommendationsFieldNumber = 2,
+    kCodeFieldNumber = 1,
+  };
+  // repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+  [[nodiscard]] int recommendations_size()
+      const;
+  private:
+  int _internal_recommendations_size() const;
+
+  public:
+  void clear_recommendations() ;
+  [[nodiscard]] const ::pandora::friend_::v1::RecommendedFriendInfo& recommendations(int index) const;
+  [[nodiscard]] ::pandora::friend_::v1::RecommendedFriendInfo* PROTOBUF_NONNULL mutable_recommendations(int index);
+  ::pandora::friend_::v1::RecommendedFriendInfo* PROTOBUF_NONNULL add_recommendations();
+  [[nodiscard]] const ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>&
+  recommendations() const;
+  [[nodiscard]] ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>* PROTOBUF_NONNULL
+  mutable_recommendations();
+
+  private:
+  const ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>& _internal_recommendations() const;
+  ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>* PROTOBUF_NONNULL _internal_mutable_recommendations();
+
+  public:
+  // .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+  void clear_code() ;
+  [[nodiscard]] ::pandora::common::v1::ErrCode code() const;
+  void set_code(::pandora::common::v1::ErrCode value);
+
+  private:
+  ::pandora::common::v1::ErrCode _internal_code() const;
+  void _internal_set_code(::pandora::common::v1::ErrCode value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:pandora.friend.v1.RecommendFriendsResponse)
+ private:
+  class _Internal;
+  using ParseTableT_ =
+      ::google::protobuf::internal::TcParseTable<1, 2,
+                          1, 0,
+                          2>;
+  static constexpr ParseTableT_ InternalGenerateParseTable_(
+      const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
+  friend class ::google::protobuf::internal::TcParser;
+  #ifndef PROTOBUF_MESSAGE_GLOBALS
+  static const ParseTableT_ _table_;
+  #endif
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  friend ::google::protobuf::internal::PrivateAccess;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                                    ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const RecommendFriendsResponse& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::RepeatedPtrField< ::pandora::friend_::v1::RecommendedFriendInfo > recommendations_;
+    int code_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -6359,6 +7097,356 @@ inline ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::BlockInfo>* 
 ListBlocksResponse::_internal_mutable_blocks() {
   ::google::protobuf::internal::TSanRead(&_impl_);
   return &_impl_.blocks_;
+}
+
+// -------------------------------------------------------------------
+
+// RecommendedFriendInfo
+
+// uint64 player_id = 1 [json_name = "playerId"];
+inline void RecommendedFriendInfo::clear_player_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.player_id_ = ::uint64_t{0u};
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+}
+inline ::uint64_t RecommendedFriendInfo::player_id() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendedFriendInfo.player_id)
+  return _internal_player_id();
+}
+inline void RecommendedFriendInfo::set_player_id(::uint64_t value) {
+  _internal_set_player_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendedFriendInfo.player_id)
+}
+inline ::uint64_t RecommendedFriendInfo::_internal_player_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.player_id_;
+}
+inline void RecommendedFriendInfo::_internal_set_player_id(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.player_id_ = value;
+}
+
+// string nickname = 2 [json_name = "nickname"];
+inline void RecommendedFriendInfo::clear_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+}
+inline const ::std::string& RecommendedFriendInfo::nickname() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendedFriendInfo.nickname)
+  return _internal_nickname();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void RecommendedFriendInfo::set_nickname(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  _impl_.nickname_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendedFriendInfo.nickname)
+}
+inline ::std::string* PROTOBUF_NONNULL RecommendedFriendInfo::mutable_nickname()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  ::std::string* _s = _internal_mutable_nickname();
+  // @@protoc_insertion_point(field_mutable:pandora.friend.v1.RecommendedFriendInfo.nickname)
+  return _s;
+}
+inline const ::std::string& RecommendedFriendInfo::_internal_nickname() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.nickname_.Get();
+}
+inline void RecommendedFriendInfo::_internal_set_nickname(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL RecommendedFriendInfo::_internal_mutable_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.nickname_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE RecommendedFriendInfo::release_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:pandora.friend.v1.RecommendedFriendInfo.nickname)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000001U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  auto* released = _impl_.nickname_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.nickname_.Set("", GetArena());
+  }
+  return released;
+}
+inline void RecommendedFriendInfo::set_allocated_nickname(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  }
+  _impl_.nickname_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.nickname_.IsDefault()) {
+    _impl_.nickname_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:pandora.friend.v1.RecommendedFriendInfo.nickname)
+}
+
+// bool is_online = 3 [json_name = "isOnline"];
+inline void RecommendedFriendInfo::clear_is_online() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_online_ = false;
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+}
+inline bool RecommendedFriendInfo::is_online() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendedFriendInfo.is_online)
+  return _internal_is_online();
+}
+inline void RecommendedFriendInfo::set_is_online(bool value) {
+  _internal_set_is_online(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendedFriendInfo.is_online)
+}
+inline bool RecommendedFriendInfo::_internal_is_online() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_online_;
+}
+inline void RecommendedFriendInfo::_internal_set_is_online(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_online_ = value;
+}
+
+// int64 last_seen_ms = 4 [json_name = "lastSeenMs"];
+inline void RecommendedFriendInfo::clear_last_seen_ms() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.last_seen_ms_ = ::int64_t{0};
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+}
+inline ::int64_t RecommendedFriendInfo::last_seen_ms() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendedFriendInfo.last_seen_ms)
+  return _internal_last_seen_ms();
+}
+inline void RecommendedFriendInfo::set_last_seen_ms(::int64_t value) {
+  _internal_set_last_seen_ms(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendedFriendInfo.last_seen_ms)
+}
+inline ::int64_t RecommendedFriendInfo::_internal_last_seen_ms() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.last_seen_ms_;
+}
+inline void RecommendedFriendInfo::_internal_set_last_seen_ms(::int64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.last_seen_ms_ = value;
+}
+
+// uint32 mutual_friend_count = 5 [json_name = "mutualFriendCount"];
+inline void RecommendedFriendInfo::clear_mutual_friend_count() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.mutual_friend_count_ = 0u;
+  ClearHasBit(_impl_._has_bits_[0], 0x00000010U);
+}
+inline ::uint32_t RecommendedFriendInfo::mutual_friend_count() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendedFriendInfo.mutual_friend_count)
+  return _internal_mutual_friend_count();
+}
+inline void RecommendedFriendInfo::set_mutual_friend_count(::uint32_t value) {
+  _internal_set_mutual_friend_count(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendedFriendInfo.mutual_friend_count)
+}
+inline ::uint32_t RecommendedFriendInfo::_internal_mutual_friend_count() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.mutual_friend_count_;
+}
+inline void RecommendedFriendInfo::_internal_set_mutual_friend_count(::uint32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.mutual_friend_count_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// RecommendFriendsRequest
+
+// uint64 player_id = 1 [json_name = "playerId"];
+inline void RecommendFriendsRequest::clear_player_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.player_id_ = ::uint64_t{0u};
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+}
+inline ::uint64_t RecommendFriendsRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendFriendsRequest.player_id)
+  return _internal_player_id();
+}
+inline void RecommendFriendsRequest::set_player_id(::uint64_t value) {
+  _internal_set_player_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendFriendsRequest.player_id)
+}
+inline ::uint64_t RecommendFriendsRequest::_internal_player_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.player_id_;
+}
+inline void RecommendFriendsRequest::_internal_set_player_id(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.player_id_ = value;
+}
+
+// uint32 limit = 2 [json_name = "limit"];
+inline void RecommendFriendsRequest::clear_limit() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.limit_ = 0u;
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+}
+inline ::uint32_t RecommendFriendsRequest::limit() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendFriendsRequest.limit)
+  return _internal_limit();
+}
+inline void RecommendFriendsRequest::set_limit(::uint32_t value) {
+  _internal_set_limit(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendFriendsRequest.limit)
+}
+inline ::uint32_t RecommendFriendsRequest::_internal_limit() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.limit_;
+}
+inline void RecommendFriendsRequest::_internal_set_limit(::uint32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.limit_ = value;
+}
+
+// repeated uint64 exclude_player_ids = 3 [json_name = "excludePlayerIds"];
+inline int RecommendFriendsRequest::_internal_exclude_player_ids_size() const {
+  return _internal_exclude_player_ids().size();
+}
+inline int RecommendFriendsRequest::exclude_player_ids_size() const {
+  return _internal_exclude_player_ids_size();
+}
+inline void RecommendFriendsRequest::clear_exclude_player_ids() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.exclude_player_ids_.Clear();
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+}
+inline ::uint64_t RecommendFriendsRequest::exclude_player_ids(int index) const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendFriendsRequest.exclude_player_ids)
+  return _internal_exclude_player_ids().Get(index);
+}
+inline void RecommendFriendsRequest::set_exclude_player_ids(int index, ::uint64_t value) {
+  _internal_mutable_exclude_player_ids()->Set(index, value);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendFriendsRequest.exclude_player_ids)
+}
+inline void RecommendFriendsRequest::add_exclude_player_ids(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _internal_mutable_exclude_player_ids()
+      ->InternalAddWithArena<const ::google::protobuf::MessageLite*>(
+          internal_visibility(), this, value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_add:pandora.friend.v1.RecommendFriendsRequest.exclude_player_ids)
+}
+inline const ::google::protobuf::RepeatedField<::uint64_t>& RecommendFriendsRequest::exclude_player_ids() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:pandora.friend.v1.RecommendFriendsRequest.exclude_player_ids)
+  return _internal_exclude_player_ids();
+}
+inline ::google::protobuf::RepeatedField<::uint64_t>* PROTOBUF_NONNULL RecommendFriendsRequest::mutable_exclude_player_ids()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_mutable_list:pandora.friend.v1.RecommendFriendsRequest.exclude_player_ids)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_exclude_player_ids();
+}
+inline const ::google::protobuf::RepeatedField<::uint64_t>&
+RecommendFriendsRequest::_internal_exclude_player_ids() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.exclude_player_ids_;
+}
+inline ::google::protobuf::RepeatedField<::uint64_t>* PROTOBUF_NONNULL
+RecommendFriendsRequest::_internal_mutable_exclude_player_ids() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.exclude_player_ids_;
+}
+
+// -------------------------------------------------------------------
+
+// RecommendFriendsResponse
+
+// .pandora.common.v1.ErrCode code = 1 [json_name = "code"];
+inline void RecommendFriendsResponse::clear_code() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_ = 0;
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+}
+inline ::pandora::common::v1::ErrCode RecommendFriendsResponse::code() const {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendFriendsResponse.code)
+  return _internal_code();
+}
+inline void RecommendFriendsResponse::set_code(::pandora::common::v1::ErrCode value) {
+  _internal_set_code(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:pandora.friend.v1.RecommendFriendsResponse.code)
+}
+inline ::pandora::common::v1::ErrCode RecommendFriendsResponse::_internal_code() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return static_cast<::pandora::common::v1::ErrCode>(_impl_.code_);
+}
+inline void RecommendFriendsResponse::_internal_set_code(::pandora::common::v1::ErrCode value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_ = value;
+}
+
+// repeated .pandora.friend.v1.RecommendedFriendInfo recommendations = 2 [json_name = "recommendations"];
+inline int RecommendFriendsResponse::_internal_recommendations_size() const {
+  return _internal_recommendations().size();
+}
+inline int RecommendFriendsResponse::recommendations_size() const {
+  return _internal_recommendations_size();
+}
+inline void RecommendFriendsResponse::clear_recommendations() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.recommendations_.Clear();
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+}
+inline const ::pandora::friend_::v1::RecommendedFriendInfo& RecommendFriendsResponse::recommendations(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:pandora.friend.v1.RecommendFriendsResponse.recommendations)
+  return _internal_recommendations().Get(index);
+}
+inline ::pandora::friend_::v1::RecommendedFriendInfo* PROTOBUF_NONNULL RecommendFriendsResponse::mutable_recommendations(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable:pandora.friend.v1.RecommendFriendsResponse.recommendations)
+  return _internal_mutable_recommendations()->Mutable(index);
+}
+inline ::pandora::friend_::v1::RecommendedFriendInfo* PROTOBUF_NONNULL RecommendFriendsResponse::add_recommendations()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::pandora::friend_::v1::RecommendedFriendInfo* _add =
+      _internal_mutable_recommendations()->InternalAddWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), GetArena());
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_add:pandora.friend.v1.RecommendFriendsResponse.recommendations)
+  return _add;
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>& RecommendFriendsResponse::recommendations() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:pandora.friend.v1.RecommendFriendsResponse.recommendations)
+  return _internal_recommendations();
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>* PROTOBUF_NONNULL
+RecommendFriendsResponse::mutable_recommendations() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_mutable_list:pandora.friend.v1.RecommendFriendsResponse.recommendations)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_recommendations();
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>&
+RecommendFriendsResponse::_internal_recommendations() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.recommendations_;
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::friend_::v1::RecommendedFriendInfo>* PROTOBUF_NONNULL
+RecommendFriendsResponse::_internal_mutable_recommendations() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.recommendations_;
 }
 
 // -------------------------------------------------------------------

@@ -52,6 +52,25 @@
 
 **排期说明(2026-06-06)**:`friend` / `chat` 保留在服务清单、端口和 topic 规划中,但当前不进入实现主线。它们等 UE 客户端、Hub DS、Battle DS、Agones 和核心玩法闭环完成后,再作为社交尾部功能实现。
 
+### 3.1 业务建模原则:轻量 DDD,不做教科书 DDD
+
+**决策(2026-06-27)**:Pandora 采用 DDD 的边界、聚合、事务边界和领域事件思想,但不把代码写成重型教科书 DDD。
+
+完整口径见 `ddd-architecture.md`。
+
+核心判断:
+- **DDD 是业务建模方法,不是部署架构**。它回答的是「业务边界怎么划、哪些规则必须强一致、哪些变化可以最终一致、哪些概念应该成为聚合」。
+- **微服务 + 事件不等于 DDD**。微服务是部署形态,事件是通信方式;如果边界没建模清楚,只是把 CRUD 拆成分布式 CRUD,会增加跨服务耦合和排障成本。
+- **优先模块化边界,再按瓶颈拆服务**。账号、角色、背包、交易、匹配、房间、战斗、赛季、排行榜等先保持清晰模块边界;真正需要独立扩缩容、独立故障域或独立数据所有权时再拆服务。
+- **事件优先用于旁路和最终一致**。统计、推送、审计、排行榜、补偿、异步建边等适合事件;交易扣减、资产变更、订单结算等强一致规则必须收在明确事务边界内。
+- **战斗和网关不重 DDD 化**。战斗帧同步 / GAS / Replication 更偏状态机、性能和协议;网关连接层更偏网络会话管理。DDD 只用于外围业务边界,不进入 tick 热路径。
+
+实践口径:
+- 交易 / 背包 / 订单 / 资产:使用更严格的领域模型、幂等键、聚合边界和本地事务 / outbox。
+- 匹配 / 队伍 / 房间:使用清晰状态机和事件,但避免过度抽象。
+- 战斗结算:DS 不可信,结算权威在后端;结果落库、段位更新、奖励发放要有幂等和补偿边界。
+- 日志 / 监控 / 运维:不套 DDD,保持工具化和可观测性优先。
+
 ## 4. UE 端模块(共 5 个,在 UE 仓库)
 
 | 模块 | 用途 | 编译目标 |
@@ -309,3 +328,4 @@ Client A          Hub DS                Client B (在 A 50 米内)
 | 存储扩容 | 2026-06-18 | **人工拍板推翻“不提前引入”:现就把 friend(及同库 chat)切 TiDB** | 项目内已落地:TiDB 版 `pandora_social` DDL(§8.2 热点调优)+ friend TiDB 连接配置;Go 业务零改动(TiDB 兼容 MySQL 协议)。起集群 / 装载 DDL / 数据迁移 = Codex / 人(§11.1)。详见 `friend-distributed-scaling.md` §14 “落地修订” + `deploy/tidb-init/README.md` |
 | 全服扩容 | 2026-06-19 | **DAU 200万全区全服:zone_id 是 snowflake 机器号非选区(不删);单 Redis→Cluster、单 MySQL→分库、nodeID etcd 自动分配、push 横扩、Agones 池化** | 抗压取决于 CCU(~30万)非注册量(1000万)。已落地能力:`pkg/snowflake/etcdnode`(etcd Lease 抢 nodeID)、`redisx.NewUniversalClient`(Cluster)、`mysqlx.ShardSet`(分库),均非破坏式。push 横扩走定向路由(注册表+分区),Agones 走 Ready 池化。社交库仍走 TiDB 不套 ShardSet。详见 `scale-dau-2m.md` || 拍卖行 | 2026-06-19 | **trade 需要全服拍卖行 / 跨人撮合 → 新增独立 `auction` 服务(economy 域,与 trade 平级),不塞进 trade** | 拍卖是「每 market 单写者」交易所模型:MySQL `pandora_auction` 按 market_id 分片为权威(不跨分片事务,故不需 TiDB),Redis ZSET 订单簿做活跃撮合索引;两层幂等(挂单 idempotency_key + 结算 match_id);进程内 per-market 互斥串行不超卖,跨实例一致性哈希路由留扩容。端口 50016/51016,errcode 12000-12999,topic pandora.auction.match/audit。详见 `decision-revisit-auction-engine.md` |
 | 全服扩容 | 2026-06-26 | **【已拍板·落地起步】DAU 目标上调 200万→2000万(10×,峰值 ~600万 CCU/~15×):Region→Cell→Cell 内分片 三层** | 两道墙:单逻辑集群 ~40万 CCU + 单一全局协调层(~20 Cell 时)。**人拍板 6 项**:单 Cell 锚 40万 CCU / 3 个 Region / 逻辑分片 cell 4096+region 64 / 允许跨 region 匹配(两级撮合,结算回 owner cell)/ auction 跨 region 全局市场(按 market_id 分片)/ 一步到位。玩家路由三层 `region_route→cell_route→Cell 内 CRC16·player_id%N`,全程算不查;**region 由 cell 派生**结构性保证「同一 player owner 落同一 region+cell」。已落地 `pkg/cellroute`(确定性路由地基 + 静态映射表 + 校验,build/vet/test=0)+ `pkg/cellroute` 热更新(AtomicTable 原子整表替换 + 纯解码)+ 隔离子 module `pkg/cellroute/etcdtable`(etcd watch,镜像 etcdnode,待 Codex tidy)+ login 接线(LoginUsecase nil-safe Router,登录算 region/cell;login.proto 加 region_id/cell_id 待 Codex proto_gen)。跨 region 撮合边界已细化 `decision-revisit-global-matchmaker.md`(两级撮合:region 内 MMR 池 + 跨 region 段位桶溢出池,结算回 owner cell)。基础设施(多 k8s/Agones 池化/push 横扩/TiDB·Kafka 集群)按 §11.1 由 Codex/人接。详见 `scale-cellular-20m.md` |
+| 架构建模 | 2026-06-27 | **采用轻量 DDD 思想,不把“微服务 + 事件”误认为 DDD** | DDD 是业务建模方法,不是部署架构;微服务是部署形态,事件是通信方式。Pandora 保持模块化边界优先,交易/背包/资产等强一致模块严肃建模,匹配/队伍/房间用状态机和事件,战斗 tick/网关连接层不重 DDD 化。详见 §3.1 |

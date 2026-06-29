@@ -195,6 +195,14 @@ func (f *fakeRepo) ListBlocks(_ context.Context, playerID uint64) ([]data.BlockR
 	return out, nil
 }
 
+func (f *fakeRepo) RecommendByMutual(_ context.Context, _ uint64, _ []uint64, _ int) ([]data.RecommendRow, error) {
+	return nil, nil
+}
+
+func (f *fakeRepo) RecommendRandom(_ context.Context, _ uint64, _ []uint64, _ int) ([]data.RecommendRow, error) {
+	return nil, nil
+}
+
 // fakePusher 记录推送事件。
 type fakePusher struct {
 	events []*friendv1.FriendEvent

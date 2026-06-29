@@ -1,0 +1,218 @@
+// Pandora GuildService 协议(2026-06-27)。
+//
+// 职责(docs/design/decision-revisit-chat-group.md):公会成员管理,支撑公会聊天频道。
+// 本轮只做"支撑聊天"所需的最小完整闭环:创建 / 申请 / 审批 / 退会 / 踢人 / 解散 /
+//   转让会长 / 任命官员 / 查公会 / 查成员 / 查申请。公会战 / 副本 / 银行等完整玩法不在本轮。
+//
+// 数据落地:pandora_social 库(guilds / guild_members / guild_join_requests),
+// 结构化列直接映射 proto 字段(CLAUDE.md §5.9 关系型表不强制 proto 化 blob)。
+// 公会单归属:玩家只能属于一个公会(guild_members.player_id 唯一,类比"玩家只在一个 DS")。
+// 公会聊天即时频道,不落库;申请 / 审批 / 踢人 / 解散通知经 kafka pandora.guild.event → push。
+
+syntax = "proto3";
+
+package pandora.guild.v1;
+
+import "pandora/common/v1/errcode.proto";
+
+service GuildService {
+  rpc CreateGuild(CreateGuildRequest) returns (CreateGuildResponse);
+  rpc ApplyJoin(ApplyJoinRequest) returns (ApplyJoinResponse);
+  rpc ApproveJoin(ApproveJoinRequest) returns (ApproveJoinResponse);
+  rpc RejectJoin(RejectJoinRequest) returns (RejectJoinResponse);
+  rpc LeaveGuild(LeaveGuildRequest) returns (LeaveGuildResponse);
+  rpc KickMember(KickMemberRequest) returns (KickMemberResponse);
+  rpc DisbandGuild(DisbandGuildRequest) returns (DisbandGuildResponse);
+  rpc TransferLeader(TransferLeaderRequest) returns (TransferLeaderResponse);
+  rpc SetOfficer(SetOfficerRequest) returns (SetOfficerResponse);
+  rpc GetGuild(GetGuildRequest) returns (GetGuildResponse);
+  rpc GetMyGuild(GetMyGuildRequest) returns (GetMyGuildResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc ListJoinRequests(ListJoinRequestsRequest) returns (ListJoinRequestsResponse);
+}
+
+// 公会职位(enum 底层 int32,不属 ID 规则,CLAUDE.md §5.7)。
+enum GuildRole {
+  GUILD_ROLE_UNSPECIFIED = 0;
+  GUILD_ROLE_LEADER      = 1;  // 会长:解散 / 转让 / 任命官员 / 审批 / 踢任意成员
+  GUILD_ROLE_OFFICER     = 2;  // 官员:审批 / 踢普通成员
+  GUILD_ROLE_MEMBER      = 3;  // 成员:仅聊天 / 退会
+}
+
+// 加入申请状态(对齐 DB guild_join_requests.status 数值)。
+enum GuildJoinStatus {
+  GUILD_JOIN_STATUS_UNSPECIFIED = 0;
+  GUILD_JOIN_STATUS_PENDING     = 1;
+  GUILD_JOIN_STATUS_APPROVED    = 2;
+  GUILD_JOIN_STATUS_REJECTED    = 3;
+}
+
+// GuildMember 是客户端可见的成员视图(CLAUDE.md §5.8 客户端可见结构)。
+// nickname 留空,由客户端按 player_id 向 player 服务解析显示名(§5.8 最小数据单位)。
+message GuildMember {
+  uint64    player_id = 1;
+  string    nickname  = 2;
+  GuildRole role      = 3;
+  int64     joined_ms = 4;
+}
+
+// Guild 是客户端可见的公会视图(CLAUDE.md §5.8)。
+message Guild {
+  uint64 guild_id     = 1;
+  string name         = 2;
+  uint64 leader_id    = 3;
+  int32  member_count = 4;
+  int32  max_members  = 5;
+  int64  created_ms   = 6;
+}
+
+// GuildJoinRequest 是客户端可见的「待处理加入申请」视图(给会长 / 官员看)。
+message GuildJoinRequest {
+  uint64 request_id     = 1;
+  uint64 guild_id       = 2;
+  uint64 from_player_id = 3;
+  string from_nickname  = 4;  // 留空,客户端解析
+  int64  created_ms     = 5;
+}
+
+message CreateGuildRequest {
+  // player_id 由服务端以 JWT ctx 为准覆盖(R5),请求体可不填。
+  uint64 player_id = 1;
+  string name      = 2;
+}
+
+message CreateGuildResponse {
+  pandora.common.v1.ErrCode code = 1;
+  uint64 guild_id = 2;  // snowflake(uint64,不变量 §9.11)
+}
+
+message ApplyJoinRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖
+  uint64 guild_id  = 2;
+}
+
+message ApplyJoinResponse {
+  pandora.common.v1.ErrCode code = 1;
+  uint64 request_id = 2;  // snowflake
+}
+
+message ApproveJoinRequest {
+  uint64 player_id  = 1;  // 审批人(JWT ctx 覆盖),须 LEADER / OFFICER
+  uint64 request_id = 2;
+}
+
+message ApproveJoinResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message RejectJoinRequest {
+  uint64 player_id  = 1;  // 审批人(JWT ctx 覆盖)
+  uint64 request_id = 2;
+}
+
+message RejectJoinResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message LeaveGuildRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖;LEADER 退会须先转让或解散
+}
+
+message LeaveGuildResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message KickMemberRequest {
+  uint64 player_id = 1;  // 操作人(JWT ctx 覆盖)
+  uint64 target_id = 2;  // 被踢成员
+}
+
+message KickMemberResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message DisbandGuildRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖;仅 LEADER
+}
+
+message DisbandGuildResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message TransferLeaderRequest {
+  uint64 player_id = 1;  // 现任会长(JWT ctx 覆盖)
+  uint64 target_id = 2;  // 新会长(须为本公会成员)
+}
+
+message TransferLeaderResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message SetOfficerRequest {
+  uint64 player_id  = 1;  // 会长(JWT ctx 覆盖)
+  uint64 target_id  = 2;  // 目标成员
+  bool   is_officer = 3;  // true 任命 OFFICER,false 降回 MEMBER
+}
+
+message SetOfficerResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+message GetGuildRequest {
+  uint64 guild_id = 1;
+}
+
+message GetGuildResponse {
+  pandora.common.v1.ErrCode code = 1;
+  Guild guild = 2;
+}
+
+message GetMyGuildRequest {
+  uint64 player_id = 1;  // JWT ctx 覆盖
+}
+
+message GetMyGuildResponse {
+  pandora.common.v1.ErrCode code = 1;
+  Guild guild = 2;  // 不在任何公会时 code=OK 且 guild 为空
+}
+
+message ListMembersRequest {
+  uint64 guild_id = 1;
+}
+
+message ListMembersResponse {
+  pandora.common.v1.ErrCode code = 1;
+  repeated GuildMember members = 2;
+}
+
+message ListJoinRequestsRequest {
+  uint64 player_id = 1;  // 会长 / 官员(JWT ctx 覆盖),查自己公会的挂起申请
+}
+
+message ListJoinRequestsResponse {
+  pandora.common.v1.ErrCode code = 1;
+  repeated GuildJoinRequest requests = 2;
+}
+
+// ===== Kafka 推送 payload(pandora.guild.event,key=接收方 player_id)=====
+//
+// 公会成员关系变更通知,经 push 服务推给接收方(原则 2:不回发操作者)。
+// 消费方:push 服务 → server stream → 客户端。
+
+enum GuildEventType {
+  GUILD_EVENT_TYPE_UNSPECIFIED = 0;
+  GUILD_EVENT_TYPE_JOIN_APPLIED   = 1;  // 有人申请加入(发给会长 / 官员)
+  GUILD_EVENT_TYPE_JOIN_APPROVED  = 2;  // 申请通过(发给申请人)
+  GUILD_EVENT_TYPE_JOIN_REJECTED  = 3;  // 申请被拒(发给申请人)
+  GUILD_EVENT_TYPE_KICKED         = 4;  // 被踢出(发给被踢者)
+  GUILD_EVENT_TYPE_DISBANDED      = 5;  // 公会解散(发给全体成员)
+  GUILD_EVENT_TYPE_LEADER_CHANGED = 6;  // 会长变更(发给全体成员)
+}
+
+message GuildEvent {
+  GuildEventType type         = 1;
+  uint64         guild_id     = 2;
+  uint64         to_player_id = 3;  // 接收方(也是 kafka key)
+  uint64         actor_id     = 4;  // 触发者(申请人 / 操作会长等)
+  string         guild_name   = 5;
+}

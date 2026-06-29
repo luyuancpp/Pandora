@@ -48,6 +48,15 @@ service InventoryService {
   // 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
   rpc SettleAuctionMatch(SettleAuctionMatchRequest) returns (SettleAuctionMatchResponse);
 
+  // SettlePlayerTrade 原子结算一笔玩家间点对点交易(系统接口,仅后端内部直连):
+  //   与拍卖不同,P2P 交易无 escrow 预冻,直接从双方活跃背包 / 余额在同一 MySQL 本地事务里对转 ——
+  //     卖家:手 seller_items 给买家,收 buyer_items + price 金币;
+  //     买家:手 buyer_items + price 金币给卖家,收 seller_items。
+  //   任一方道具 / 金币不足 → ERR_INVENTORY_INSUFFICIENT,整笔回滚。
+  // 幂等键 = order_id(雪花),同一订单重复结算只生效一次(不变量 §9.7)。
+  // 不在 Envoy 暴露;带玩家 JWT 的客户端调用一律拒绝(同 GrantItems)。
+  rpc SettlePlayerTrade(SettlePlayerTradeRequest) returns (SettlePlayerTradeResponse);
+
   // ReleaseEscrow 拍卖挂单托管退还(系统接口,仅后端内部直连):
   //   撤单 / 过期 / 完全成交后把某挂单 escrow 的残余资产退回玩家活跃余额并关闭托管。
   //   卖单残余 = 未成交道具;买单残余 = 未成交金币 + 成交价优于出价的价差返还。
@@ -155,6 +164,21 @@ message SettleAuctionMatchRequest {
 }
 
 message SettleAuctionMatchResponse {
+  pandora.common.v1.ErrCode code = 1;
+}
+
+// SettlePlayerTradeRequest 玩家间点对点交易结算(系统接口,后端内部直连)。
+// 幂等键 = order_id;无 escrow,直接从双方活跃背包 / 余额原子对转。
+message SettlePlayerTradeRequest {
+  uint64 order_id     = 1;  // 交易订单 order_id(结算幂等键,雪花 uint64,§11)
+  uint64 seller_id    = 2;  // 卖家 player_id(交 seller_items,收 buyer_items + price)
+  uint64 buyer_id     = 3;  // 买家 player_id(交 buyer_items + price,收 seller_items)
+  repeated ItemGrant seller_items = 4;  // 卖家交付给买家的道具(每条 count > 0)
+  repeated ItemGrant buyer_items  = 5;  // 买家交付给卖家的道具(可空 = 纯金币购买)
+  int64  price        = 6;  // 买家付卖家的金币(>= 0)
+}
+
+message SettlePlayerTradeResponse {
   pandora.common.v1.ErrCode code = 1;
 }
 

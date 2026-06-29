@@ -128,6 +128,8 @@ enum ChatChannel : int {
   CHAT_CHANNEL_TEAM = 2,
   CHAT_CHANNEL_PRIVATE = 3,
   CHAT_CHANNEL_SYSTEM = 4,
+  CHAT_CHANNEL_GUILD = 5,
+  CHAT_CHANNEL_GROUP = 6,
   ChatChannel_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   ChatChannel_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -138,11 +140,11 @@ extern const uint32_t ChatChannel_internal_data_[];
 inline constexpr ChatChannel ChatChannel_MIN =
     static_cast<ChatChannel>(0);
 inline constexpr ChatChannel ChatChannel_MAX =
-    static_cast<ChatChannel>(4);
+    static_cast<ChatChannel>(6);
 [[nodiscard]] inline bool ChatChannel_IsValid(int value) {
-  return 0 <= value && value <= 4;
+  return 0 <= value && value <= 6;
 }
-inline constexpr int ChatChannel_ARRAYSIZE = 4 + 1;
+inline constexpr int ChatChannel_ARRAYSIZE = 6 + 1;
 [[nodiscard]] const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL
 ChatChannel_descriptor();
 [[nodiscard]] inline auto ProtobufInternalGetEnumDescriptor(ChatChannel) {
@@ -157,7 +159,7 @@ template <typename T>
 }
 template <>
 [[nodiscard]] inline const ::std::string& ChatChannel_Name(ChatChannel value) {
-  return ::google::protobuf::internal::NameOfDenseEnum<ChatChannel_descriptor, 0, 4>(
+  return ::google::protobuf::internal::NameOfDenseEnum<ChatChannel_descriptor, 0, 6>(
       static_cast<int>(value));
 }
 [[nodiscard]] inline bool ChatChannel_Parse(

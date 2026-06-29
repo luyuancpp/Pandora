@@ -25,6 +25,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 
 	"github.com/luyuancpp/pandora/pkg/auth"
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/grpcclient"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	plog "github.com/luyuancpp/pandora/pkg/log"
@@ -165,6 +166,21 @@ func main() {
 		helper.Warnw("msg", "locator_addr_empty", "hint", "match state (MATCHING/BATTLE) will not be reported to player_locator")
 	}
 	uc := biz.NewMatchUsecase(repo, reader, pusher, allocator, sf, locator, cfg.Match)
+
+	// 蜂窝扩容:按 cfg.CellRoute 装配确定性 region/cell 路由(off/static/etcd 统一口）。
+	// 单 Cell(mode 空）→ router=nil,行为不变;多 Cell → 两级撮合 + battle 放置感知 region。
+	if router, cellClose, cerr := etcdtable.BuildRouter(context.Background(), cfg.CellRoute); cerr != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", cerr)
+		os.Exit(1)
+	} else if router != nil {
+		if cellClose != nil {
+			defer func() { _ = cellClose() }()
+		}
+		uc.SetCellRouter(router)
+		uc.SetRegionPolicy(biz.DefaultRegionMatchPolicy())
+		helper.Infow("msg", "cellroute_enabled", "mode", cfg.CellRoute.Mode,
+			"self_region", cfg.CellRoute.SelfRegion, "self_cell", cfg.CellRoute.SelfCell)
+	}
 	svc := service.NewMatchService(uc, sf)
 
 	// 8. gRPC + HTTP

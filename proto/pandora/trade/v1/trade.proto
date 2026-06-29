@@ -30,30 +30,33 @@ enum OrderState {
 }
 
 message TradeItem {
-  string item_uid = 1;  // 道具实例 ID
-  int32  count    = 2;
-  // 3-9 reserved
-  reserved 3 to 9;
+  // 1 原 item_uid(string 实例 ID 模型)已废弃:inventory 是 item_config_id 可堆叠模型,
+  // 无实例 UID 概念;交易统一对齐到「配置 ID + 数量」,实例 UID 留待 inventory 引入实例化后再恢复。
+  reserved 1, 3 to 9;
+  uint32 item_config_id = 10;  // 道具配置 ID(uint32,CLAUDE.md §12),对齐 inventory.ItemGrant
+  int32  count          = 2;   // 数量(>0)
 }
 
 message Order {
   uint64  order_id   = 1;
   uint64  seller_id  = 2;
   uint64  buyer_id   = 3;
-  repeated TradeItem items = 4;
-  int64   price      = 5;  // 金币
+  repeated TradeItem items = 4;  // 卖家交付给买家的道具
+  int64   price      = 5;  // 买家付卖家的金币(>=0)
   OrderState state   = 6;
   int64   created_at_ms = 7;
   int64   expires_at_ms = 8;
   // 9 reserved
   reserved 9;
+  repeated TradeItem buyer_items = 10;  // 买家交付给卖家的道具(物物 / 双向交易;可空 = 纯金币购买)
 }
 
 message CreateOrderRequest {
   uint64 seller_id = 1;
   uint64 buyer_id  = 2;
-  repeated TradeItem items = 3;
-  int64 price      = 4;
+  repeated TradeItem items = 3;  // 卖家交付给买家的道具
+  int64 price      = 4;          // 买家付卖家的金币(>=0)
+  repeated TradeItem buyer_items = 5;  // 买家交付给卖家的道具(可空 = 纯金币购买)
 }
 
 message CreateOrderResponse {

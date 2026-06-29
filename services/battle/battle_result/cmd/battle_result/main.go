@@ -31,6 +31,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	klog "github.com/go-kratos/kratos/v2/log"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/mysqlx"
@@ -157,6 +158,12 @@ func main() {
 	}
 
 	uc := biz.NewBattleResultUsecase(repo, mmr, pusher, releaser, dsReleaser, cfg.Battle)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewBattleResultService(uc)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

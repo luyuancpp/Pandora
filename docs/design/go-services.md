@@ -1,6 +1,6 @@
 # Pandora Go 服务清单与契约
 
-> 16 个 go 服务的职责边界、对外接口、关键状态、依赖矩阵。
+> 18 个 go 服务的职责边界、对外接口、关键状态、依赖矩阵。
 >
 > ⚠️ **2026-06-04 架构终版**:
 > - 框架统一 **Kratos**(替代 go-zero,详见 `gateway-decision.md` §4)
@@ -16,18 +16,20 @@
 | 2 | player | 50002 | 无 | mysql + redis | player.update | ✅ W4 ④(MMR 写回 + GetMMR reader) |
 | 3 | data_service | 50003 | 无 | mysql + redis | (写穿层) | ✅ 2026-06-16(player_data 版本化 blob + cache-aside 网关,内网) |
 | 4 | friend | 50004 | 弱(friend.event 推送) | mysql | pandora.friend.event | ✅ 2026-06-15(好友请求/接受/列表/拉黑 + locator 在线状态) |
-| 5 | chat | 50005 | 弱 | mysql(私聊历史)+ kafka | chat.{world,team,private} | ✅ 2026-06-16(三频道 + 内容校验 + 私聊落库 + team fan-out) |
+| 5 | chat | 50005 | 弱 | mysql(私聊历史)+ kafka | chat.{world,team,private,guild,group} | ✅ 2026-06-27(五频道 + 内容校验 + 私聊落库 + team/guild/group fan-out,公会/群即时不落库) |
 | 6 | player_locator | 50006 | 强 | redis | locator.update | ✅ W3 ⑤(W4 ⑦ matchmaker 上报 MATCHING/BATTLE) |
-| 7 | team | 50010 | 强 | redis | - | ✅ W3 ⑦ |
-| 8 | matchmaker | 50011 | 强 | redis | (生产 match.found) | ✅ W4 ①(W4 ⑦ 接 locator 串 MATCHING/BATTLE) |
-| 9 | trade | 50012 | 强 | redis | trade.audit | ✅ 2026-06-16(两阶段确认订单状态机 + 乐观锁 + 结算幂等键 + 审计) |
-| 10 | dialogue | 50013 | 无 | 配置驱动(内存,留 mysql hook) | - | ✅ 2026-06-16(配置对话树 + 内存会话状态机 Start/Choose/End) |
-| 11 | ds_allocator | 50020 | 弱 | redis (+k8s) | (生产 ds.lifecycle) | ✅ W4 ②(Mock 分配器,W4 ③ 发 abandoned,W4 ⑧ abandoned 可靠补偿,W4 ⑫ 真 Agones REST allocator) |
-| 12 | hub_allocator | 50021 | 弱 | redis (+k8s) | (生产 ds.lifecycle) | ✅ W4 ⑤ + 自动扩缩容(2026-06-15:按在线人数控 Agones Fleet 副本) |
-| 13 | battle_result | 50022 | 无 | mysql | battle.result + ds.lifecycle | ✅ W4 ③(幂等落库 + Elo MMR + abandoned 补偿),W4 ⑨(player.update 事务出箱可靠化) |
-| 14 | **push** ⭐ | **50014**(gRPC server stream) | 强(连接索引) | redis(离线消息)| pandora.{team,match,chat,player,friend,system}.* | ✅ W2 ⑤(mock 5s tick,W3 接 kafka) |
-| 15 | inventory | 50015 | 无 | mysql(pandora_trade) | - | ✅ W5 ③(大厅背包:货币+可堆叠道具,用/售/授予,ledger 幂等) |
-| 16 | auction | 50016 | 强(per-market 串行撮合) | redis(订单簿)+ mysql(pandora_auction 权威) | (生产 auction.match/audit) | ✅ 2026-06-19(全服拍卖行/撮合引擎,两层幂等,ZSET 价格-时间优先) |
+| 7 | leaderboard | 50007 | 无 | redis(实时榜)+ mysql(结算) | (生产 leaderboard.settle) | ✅ 2026-06-27(通用排行榜,全服/公会/副本/活动可扩展) |
+| 8 | guild | 50008 | 弱(guild.event 推送) | mysql(pandora_social) | pandora.guild.event | ✅ 2026-06-27(公会 GuildService + 临时群 GroupService 同进程;公会/群聊不落库) |
+| 9 | team | 50010 | 强 | redis | - | ✅ W3 ⑦ |
+| 10 | matchmaker | 50011 | 强 | redis | (生产 match.found) | ✅ W4 ①(W4 ⑦ 接 locator 串 MATCHING/BATTLE) |
+| 11 | trade | 50012 | 强 | redis | trade.audit | ✅ 2026-06-16(两阶段确认订单状态机 + 乐观锁 + 结算幂等键 + 审计) |
+| 12 | dialogue | 50013 | 无 | 配置驱动(内存,留 mysql hook) | - | ✅ 2026-06-16(配置对话树 + 内存会话状态机 Start/Choose/End) |
+| 13 | **push** ⭐ | **50014**(gRPC server stream) | 强(连接索引) | redis(离线消息)| pandora.{team,match,chat,player,friend,system}.* | ✅ W2 ⑤(mock 5s tick,W3 接 kafka) |
+| 14 | inventory | 50015 | 无 | mysql(pandora_trade) | - | ✅ W5 ③(大厅背包:货币+可堆叠道具,用/售/授予,ledger 幂等) |
+| 15 | auction | 50016 | 强(per-market 串行撮合) | redis(订单簿)+ mysql(pandora_auction 权威) | (生产 auction.match/audit) | ✅ 2026-06-19(全服拍卖行/撮合引擎,两层幂等,ZSET 价格-时间优先) |
+| 16 | ds_allocator | 50020 | 弱 | redis (+k8s) | (生产 ds.lifecycle) | ✅ W4 ②(Mock 分配器,W4 ③ 发 abandoned,W4 ⑧ abandoned 可靠补偿,W4 ⑫ 真 Agones REST allocator) |
+| 17 | hub_allocator | 50021 | 弱 | redis (+k8s) | (生产 ds.lifecycle) | ✅ W4 ⑤ + 自动扩缩容(2026-06-15:按在线人数控 Agones Fleet 副本) |
+| 18 | battle_result | 50022 | 无 | mysql | battle.result + ds.lifecycle | ✅ W4 ③(幂等落库 + Elo MMR + abandoned 补偿),W4 ⑨(player.update 事务出箱可靠化) |
 
 ⭐ = 2026-06-04 终版新增。push 是 Kratos transport/grpc 暴露的 server stream 服务,客户端通过 Envoy 连过来,详见 `gateway-decision.md` §6。
 
@@ -152,22 +154,50 @@ ListBlocks(player_id) → []BlockInfo
 
 ### 2.5 chat
 
-**职责**:频道(世界 / 队伍 / 私聊)
+**职责**:五频道(世界 / 队伍 / 私聊 / 公会 / 临时群)
 
 **对外 RPC**:
 ```
 SendMessage(player_id, channel, content) → message_id
-PullHistory(player_id, channel) → []ChatMessage
+PullHistory(player_id, channel) → []ChatMessage   // 仅 PRIVATE 返历史
 ```
 
-**实现**:
-- 世界频道:kafka topic + 各 hub DS 消费下发
-- 队伍频道:redis pub/sub
-- 私聊:redis pub/sub + 离线 mysql
+**实现**(2026-06-27 落地):
+- WORLD:kafka `pandora.chat.world`(广播)
+- TEAM:解析队伍成员 → 逐成员 kafka 扇出(key=接收方 player_id)
+- PRIVATE:点对点 kafka + mysql `pandora_social` 落库(唯一有历史的频道)
+- GUILD / GROUP:gRPC 调 guild 服务(`GuildReader.ListMembers` / `GroupReader.ListGroupMembers`)
+  解析成员 → 逐成员 kafka 扇出排除发送者,**即时下发不落库**(用户「工会历史群聊不落库」)
+- 发送者必须在目标队伍 / 公会 / 群内,否则 `ErrChatChannelInvalid`
 
 **反作弊**:消息内容服务端过敏感词,长度 ≤256
 
-**2026-06-06 排期决策**:chat 不进入当前后端主线。push 可以继续保留 `pandora.chat.*` topic 和订阅模板,但 chat 服务本体等 UE 与所有核心功能完成后再做。
+---
+
+### 2.5b guild(公会 + 临时群聊)
+
+**职责**:公会(常驻社团)+ 临时群聊(轻量多人会话),同进程两套 RPC,社交域第三服。
+**端口**:gRPC :50008 / HTTP :51008(⚠️ 50015 已被 inventory 占用,勿复用)。
+**存储**:mysql `pandora_social` 强依赖(`11-guild-tables.sql`);kafka `pandora.guild.event` 弱依赖
+(成员变更推送,key=接收方 player_id)。
+
+**GuildService(13 RPC)**:
+```
+CreateGuild / ApplyJoin / ApproveJoin / RejectJoin / LeaveGuild / KickMember /
+DisbandGuild / TransferLeader / SetOfficer / GetGuild / GetMyGuild / ListMembers / ListJoinRequests
+```
+角色 leader/officer/member;KickMember 分级(leader 踢任意非 leader,officer 只踢 member,
+不可踢 leader / 自己);成员变更经 guild.event 推在线成员。
+
+**GroupService(9 RPC,同进程)**:
+```
+CreateGroup / InviteToGroup / LeaveGroup / KickFromGroup / DisbandGroup /
+TransferOwner / GetGroup / ListGroupMembers / ListMyGroups
+```
+owner/member 两级;InviteToGroup 幂等;owner 不能 LeaveGroup(须先 TransferOwner / Disband)。
+
+**配置**:MaxGuildMembers(100)/ MaxGroupMembers(50)/ MaxNameLen(24,utf8 rune)。
+**errcode**:`ERR_GUILD_*`(9401-9408)/ `ERR_GROUP_*`(9501-9505)。
 
 ---
 

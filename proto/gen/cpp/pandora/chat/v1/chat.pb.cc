@@ -1173,16 +1173,17 @@ const char descriptor_table_protodef_pandora_2fchat_2fv1_2fchat_2eproto[] ABSL_A
     "ndora.chat.v1.ChatMessageR\010messages\"o\n\rC"
     "hatPushEvent\0226\n\007message\030\001 \001(\0132\034.pandora."
     "chat.v1.ChatMessageR\007message\022 \n\014to_playe"
-    "r_id\030\002 \001(\004R\ntoPlayerIdJ\004\010\003\020\n*\215\001\n\013ChatCha"
+    "r_id\030\002 \001(\004R\ntoPlayerIdJ\004\010\003\020\n*\275\001\n\013ChatCha"
     "nnel\022\034\n\030CHAT_CHANNEL_UNSPECIFIED\020\000\022\026\n\022CH"
     "AT_CHANNEL_WORLD\020\001\022\025\n\021CHAT_CHANNEL_TEAM\020"
     "\002\022\030\n\024CHAT_CHANNEL_PRIVATE\020\003\022\027\n\023CHAT_CHAN"
-    "NEL_SYSTEM\020\0042\301\001\n\013ChatService\022X\n\013SendMess"
-    "age\022#.pandora.chat.v1.SendMessageRequest"
-    "\032$.pandora.chat.v1.SendMessageResponse\022X"
-    "\n\013PullHistory\022#.pandora.chat.v1.PullHist"
-    "oryRequest\032$.pandora.chat.v1.PullHistory"
-    "Responseb\006proto3"
+    "NEL_SYSTEM\020\004\022\026\n\022CHAT_CHANNEL_GUILD\020\005\022\026\n\022"
+    "CHAT_CHANNEL_GROUP\020\0062\301\001\n\013ChatService\022X\n\013"
+    "SendMessage\022#.pandora.chat.v1.SendMessag"
+    "eRequest\032$.pandora.chat.v1.SendMessageRe"
+    "sponse\022X\n\013PullHistory\022#.pandora.chat.v1."
+    "PullHistoryRequest\032$.pandora.chat.v1.Pul"
+    "lHistoryResponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
     descriptor_table_pandora_2fchat_2fv1_2fchat_2eproto_deps[1] = {
@@ -1192,7 +1193,7 @@ static ::absl::once_flag descriptor_table_pandora_2fchat_2fv1_2fchat_2eproto_onc
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_pandora_2fchat_2fv1_2fchat_2eproto = {
     false,
     false,
-    1416,
+    1464,
     descriptor_table_protodef_pandora_2fchat_2fv1_2fchat_2eproto,
     "pandora/chat/v1/chat.proto",
     &descriptor_table_pandora_2fchat_2fv1_2fchat_2eproto_once,
@@ -1214,7 +1215,7 @@ ChatChannel_descriptor() {
   return file_level_enum_descriptors_pandora_2fchat_2fv1_2fchat_2eproto[0];
 }
 PROTOBUF_CONSTINIT const uint32_t ChatChannel_internal_data_[] = {
-    327680u, 0u, };
+    458752u, 0u, };
 // ===================================================================
 
 ChatMessage::ChatMessage(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)

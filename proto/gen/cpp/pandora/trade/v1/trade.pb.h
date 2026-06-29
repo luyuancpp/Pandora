@@ -356,24 +356,9 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED TradeItem final : public ::google::
 
   // accessors -------------------------------------------------------
   enum : int {
-    kItemUidFieldNumber = 1,
     kCountFieldNumber = 2,
+    kItemConfigIdFieldNumber = 10,
   };
-  // string item_uid = 1 [json_name = "itemUid"];
-  void clear_item_uid() ;
-  [[nodiscard]] const ::std::string& item_uid() const;
-  template <typename Arg_ = const ::std::string&, typename... Args_>
-  void set_item_uid(Arg_&& arg, Args_... args);
-  ::std::string* PROTOBUF_NONNULL mutable_item_uid();
-  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_item_uid();
-  void set_allocated_item_uid(::std::string* PROTOBUF_NULLABLE value);
-
-  private:
-  const ::std::string& _internal_item_uid() const;
-  PROTOBUF_ALWAYS_INLINE void _internal_set_item_uid(const ::std::string& value);
-  ::std::string* PROTOBUF_NONNULL _internal_mutable_item_uid();
-
-  public:
   // int32 count = 2 [json_name = "count"];
   void clear_count() ;
   [[nodiscard]] ::int32_t count() const;
@@ -384,12 +369,22 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED TradeItem final : public ::google::
   void _internal_set_count(::int32_t value);
 
   public:
+  // uint32 item_config_id = 10 [json_name = "itemConfigId"];
+  void clear_item_config_id() ;
+  [[nodiscard]] ::uint32_t item_config_id() const;
+  void set_item_config_id(::uint32_t value);
+
+  private:
+  ::uint32_t _internal_item_config_id() const;
+  void _internal_set_item_config_id(::uint32_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:pandora.trade.v1.TradeItem)
  private:
   class _Internal;
   using ParseTableT_ =
-      ::google::protobuf::internal::TcParseTable<1, 2,
-                          0, 43,
+      ::google::protobuf::internal::TcParseTable<0, 2,
+                          0, 0,
                           2>;
   static constexpr ParseTableT_ InternalGenerateParseTable_(
       const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
@@ -417,8 +412,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED TradeItem final : public ::google::
         const TradeItem& from_msg);
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
-    ::google::protobuf::internal::ArenaStringPtr item_uid_;
     ::int32_t count_;
+    ::uint32_t item_config_id_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -1841,6 +1836,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Order final : public ::google::prot
   // accessors -------------------------------------------------------
   enum : int {
     kItemsFieldNumber = 4,
+    kBuyerItemsFieldNumber = 10,
     kOrderIdFieldNumber = 1,
     kSellerIdFieldNumber = 2,
     kBuyerIdFieldNumber = 3,
@@ -1868,6 +1864,27 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Order final : public ::google::prot
   private:
   const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& _internal_items() const;
   ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL _internal_mutable_items();
+
+  public:
+  // repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
+  [[nodiscard]] int buyer_items_size()
+      const;
+  private:
+  int _internal_buyer_items_size() const;
+
+  public:
+  void clear_buyer_items() ;
+  [[nodiscard]] const ::pandora::trade::v1::TradeItem& buyer_items(int index) const;
+  [[nodiscard]] ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL mutable_buyer_items(int index);
+  ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL add_buyer_items();
+  [[nodiscard]] const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>&
+  buyer_items() const;
+  [[nodiscard]] ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+  mutable_buyer_items();
+
+  private:
+  const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& _internal_buyer_items() const;
+  ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL _internal_mutable_buyer_items();
 
   public:
   // uint64 order_id = 1 [json_name = "orderId"];
@@ -1944,8 +1961,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Order final : public ::google::prot
  private:
   class _Internal;
   using ParseTableT_ =
-      ::google::protobuf::internal::TcParseTable<3, 8,
-                          1, 0,
+      ::google::protobuf::internal::TcParseTable<4, 9,
+                          2, 0,
                           2>;
   static constexpr ParseTableT_ InternalGenerateParseTable_(
       const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
@@ -1974,6 +1991,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED Order final : public ::google::prot
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::RepeatedPtrField< ::pandora::trade::v1::TradeItem > items_;
+    ::google::protobuf::RepeatedPtrField< ::pandora::trade::v1::TradeItem > buyer_items_;
     ::uint64_t order_id_;
     ::uint64_t seller_id_;
     ::uint64_t buyer_id_;
@@ -2137,6 +2155,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CreateOrderRequest final : public :
   // accessors -------------------------------------------------------
   enum : int {
     kItemsFieldNumber = 3,
+    kBuyerItemsFieldNumber = 5,
     kSellerIdFieldNumber = 1,
     kBuyerIdFieldNumber = 2,
     kPriceFieldNumber = 4,
@@ -2160,6 +2179,27 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CreateOrderRequest final : public :
   private:
   const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& _internal_items() const;
   ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL _internal_mutable_items();
+
+  public:
+  // repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
+  [[nodiscard]] int buyer_items_size()
+      const;
+  private:
+  int _internal_buyer_items_size() const;
+
+  public:
+  void clear_buyer_items() ;
+  [[nodiscard]] const ::pandora::trade::v1::TradeItem& buyer_items(int index) const;
+  [[nodiscard]] ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL mutable_buyer_items(int index);
+  ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL add_buyer_items();
+  [[nodiscard]] const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>&
+  buyer_items() const;
+  [[nodiscard]] ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+  mutable_buyer_items();
+
+  private:
+  const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& _internal_buyer_items() const;
+  ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL _internal_mutable_buyer_items();
 
   public:
   // uint64 seller_id = 1 [json_name = "sellerId"];
@@ -2196,8 +2236,8 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CreateOrderRequest final : public :
  private:
   class _Internal;
   using ParseTableT_ =
-      ::google::protobuf::internal::TcParseTable<2, 4,
-                          1, 0,
+      ::google::protobuf::internal::TcParseTable<3, 5,
+                          2, 0,
                           2>;
   static constexpr ParseTableT_ InternalGenerateParseTable_(
       const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL class_data);
@@ -2226,6 +2266,7 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED CreateOrderRequest final : public :
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::RepeatedPtrField< ::pandora::trade::v1::TradeItem > items_;
+    ::google::protobuf::RepeatedPtrField< ::pandora::trade::v1::TradeItem > buyer_items_;
     ::uint64_t seller_id_;
     ::uint64_t buyer_id_;
     ::int64_t price_;
@@ -2475,75 +2516,35 @@ class  PROTOBUF_FUTURE_ADD_EARLY_WARN_UNUSED ListMyOrdersResponse final : public
 
 // TradeItem
 
-// string item_uid = 1 [json_name = "itemUid"];
-inline void TradeItem::clear_item_uid() {
+// uint32 item_config_id = 10 [json_name = "itemConfigId"];
+inline void TradeItem::clear_item_config_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.item_uid_.ClearToEmpty();
-  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  _impl_.item_config_id_ = 0u;
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
 }
-inline const ::std::string& TradeItem::item_uid() const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:pandora.trade.v1.TradeItem.item_uid)
-  return _internal_item_uid();
+inline ::uint32_t TradeItem::item_config_id() const {
+  // @@protoc_insertion_point(field_get:pandora.trade.v1.TradeItem.item_config_id)
+  return _internal_item_config_id();
 }
-template <typename Arg_, typename... Args_>
-PROTOBUF_ALWAYS_INLINE void TradeItem::set_item_uid(Arg_&& arg, Args_... args) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
-  _impl_.item_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:pandora.trade.v1.TradeItem.item_uid)
+inline void TradeItem::set_item_config_id(::uint32_t value) {
+  _internal_set_item_config_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:pandora.trade.v1.TradeItem.item_config_id)
 }
-inline ::std::string* PROTOBUF_NONNULL TradeItem::mutable_item_uid()
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
-  ::std::string* _s = _internal_mutable_item_uid();
-  // @@protoc_insertion_point(field_mutable:pandora.trade.v1.TradeItem.item_uid)
-  return _s;
-}
-inline const ::std::string& TradeItem::_internal_item_uid() const {
+inline ::uint32_t TradeItem::_internal_item_config_id() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.item_uid_.Get();
+  return _impl_.item_config_id_;
 }
-inline void TradeItem::_internal_set_item_uid(const ::std::string& value) {
+inline void TradeItem::_internal_set_item_config_id(::uint32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.item_uid_.Set(value, GetArena());
-}
-inline ::std::string* PROTOBUF_NONNULL TradeItem::_internal_mutable_item_uid() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  return _impl_.item_uid_.Mutable( GetArena());
-}
-inline ::std::string* PROTOBUF_NULLABLE TradeItem::release_item_uid() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:pandora.trade.v1.TradeItem.item_uid)
-  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000001U)) {
-    return nullptr;
-  }
-  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
-  auto* released = _impl_.item_uid_.Release();
-  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
-    _impl_.item_uid_.Set("", GetArena());
-  }
-  return released;
-}
-inline void TradeItem::set_allocated_item_uid(::std::string* PROTOBUF_NULLABLE value) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  if (value != nullptr) {
-    SetHasBit(_impl_._has_bits_[0], 0x00000001U);
-  } else {
-    ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
-  }
-  _impl_.item_uid_.SetAllocated(value, GetArena());
-  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.item_uid_.IsDefault()) {
-    _impl_.item_uid_.Set("", GetArena());
-  }
-  // @@protoc_insertion_point(field_set_allocated:pandora.trade.v1.TradeItem.item_uid)
+  _impl_.item_config_id_ = value;
 }
 
 // int32 count = 2 [json_name = "count"];
 inline void TradeItem::clear_count() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.count_ = 0;
-  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
 }
 inline ::int32_t TradeItem::count() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.TradeItem.count)
@@ -2551,7 +2552,7 @@ inline ::int32_t TradeItem::count() const {
 }
 inline void TradeItem::set_count(::int32_t value) {
   _internal_set_count(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.TradeItem.count)
 }
 inline ::int32_t TradeItem::_internal_count() const {
@@ -2571,7 +2572,7 @@ inline void TradeItem::_internal_set_count(::int32_t value) {
 inline void Order::clear_order_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.order_id_ = ::uint64_t{0u};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
 }
 inline ::uint64_t Order::order_id() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.order_id)
@@ -2579,7 +2580,7 @@ inline ::uint64_t Order::order_id() const {
 }
 inline void Order::set_order_id(::uint64_t value) {
   _internal_set_order_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.order_id)
 }
 inline ::uint64_t Order::_internal_order_id() const {
@@ -2595,7 +2596,7 @@ inline void Order::_internal_set_order_id(::uint64_t value) {
 inline void Order::clear_seller_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.seller_id_ = ::uint64_t{0u};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
 }
 inline ::uint64_t Order::seller_id() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.seller_id)
@@ -2603,7 +2604,7 @@ inline ::uint64_t Order::seller_id() const {
 }
 inline void Order::set_seller_id(::uint64_t value) {
   _internal_set_seller_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.seller_id)
 }
 inline ::uint64_t Order::_internal_seller_id() const {
@@ -2619,7 +2620,7 @@ inline void Order::_internal_set_seller_id(::uint64_t value) {
 inline void Order::clear_buyer_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.buyer_id_ = ::uint64_t{0u};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000010U);
 }
 inline ::uint64_t Order::buyer_id() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.buyer_id)
@@ -2627,7 +2628,7 @@ inline ::uint64_t Order::buyer_id() const {
 }
 inline void Order::set_buyer_id(::uint64_t value) {
   _internal_set_buyer_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.buyer_id)
 }
 inline ::uint64_t Order::_internal_buyer_id() const {
@@ -2698,7 +2699,7 @@ Order::_internal_mutable_items() {
 inline void Order::clear_price() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.price_ = ::int64_t{0};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000010U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000020U);
 }
 inline ::int64_t Order::price() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.price)
@@ -2706,7 +2707,7 @@ inline ::int64_t Order::price() const {
 }
 inline void Order::set_price(::int64_t value) {
   _internal_set_price(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.price)
 }
 inline ::int64_t Order::_internal_price() const {
@@ -2722,7 +2723,7 @@ inline void Order::_internal_set_price(::int64_t value) {
 inline void Order::clear_state() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.state_ = 0;
-  ClearHasBit(_impl_._has_bits_[0], 0x00000080U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000100U);
 }
 inline ::pandora::trade::v1::OrderState Order::state() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.state)
@@ -2730,7 +2731,7 @@ inline ::pandora::trade::v1::OrderState Order::state() const {
 }
 inline void Order::set_state(::pandora::trade::v1::OrderState value) {
   _internal_set_state(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.state)
 }
 inline ::pandora::trade::v1::OrderState Order::_internal_state() const {
@@ -2746,7 +2747,7 @@ inline void Order::_internal_set_state(::pandora::trade::v1::OrderState value) {
 inline void Order::clear_created_at_ms() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.created_at_ms_ = ::int64_t{0};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000020U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
 }
 inline ::int64_t Order::created_at_ms() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.created_at_ms)
@@ -2754,7 +2755,7 @@ inline ::int64_t Order::created_at_ms() const {
 }
 inline void Order::set_created_at_ms(::int64_t value) {
   _internal_set_created_at_ms(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.created_at_ms)
 }
 inline ::int64_t Order::_internal_created_at_ms() const {
@@ -2770,7 +2771,7 @@ inline void Order::_internal_set_created_at_ms(::int64_t value) {
 inline void Order::clear_expires_at_ms() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.expires_at_ms_ = ::int64_t{0};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000040U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000080U);
 }
 inline ::int64_t Order::expires_at_ms() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.expires_at_ms)
@@ -2778,7 +2779,7 @@ inline ::int64_t Order::expires_at_ms() const {
 }
 inline void Order::set_expires_at_ms(::int64_t value) {
   _internal_set_expires_at_ms(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000040U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.Order.expires_at_ms)
 }
 inline ::int64_t Order::_internal_expires_at_ms() const {
@@ -2790,6 +2791,61 @@ inline void Order::_internal_set_expires_at_ms(::int64_t value) {
   _impl_.expires_at_ms_ = value;
 }
 
+// repeated .pandora.trade.v1.TradeItem buyer_items = 10 [json_name = "buyerItems"];
+inline int Order::_internal_buyer_items_size() const {
+  return _internal_buyer_items().size();
+}
+inline int Order::buyer_items_size() const {
+  return _internal_buyer_items_size();
+}
+inline void Order::clear_buyer_items() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.buyer_items_.Clear();
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+}
+inline const ::pandora::trade::v1::TradeItem& Order::buyer_items(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:pandora.trade.v1.Order.buyer_items)
+  return _internal_buyer_items().Get(index);
+}
+inline ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL Order::mutable_buyer_items(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable:pandora.trade.v1.Order.buyer_items)
+  return _internal_mutable_buyer_items()->Mutable(index);
+}
+inline ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL Order::add_buyer_items()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::pandora::trade::v1::TradeItem* _add =
+      _internal_mutable_buyer_items()->InternalAddWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), GetArena());
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_add:pandora.trade.v1.Order.buyer_items)
+  return _add;
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& Order::buyer_items() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:pandora.trade.v1.Order.buyer_items)
+  return _internal_buyer_items();
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+Order::mutable_buyer_items() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_mutable_list:pandora.trade.v1.Order.buyer_items)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_buyer_items();
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>&
+Order::_internal_buyer_items() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.buyer_items_;
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+Order::_internal_mutable_buyer_items() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.buyer_items_;
+}
+
 // -------------------------------------------------------------------
 
 // CreateOrderRequest
@@ -2798,7 +2854,7 @@ inline void Order::_internal_set_expires_at_ms(::int64_t value) {
 inline void CreateOrderRequest::clear_seller_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.seller_id_ = ::uint64_t{0u};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
 }
 inline ::uint64_t CreateOrderRequest::seller_id() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.CreateOrderRequest.seller_id)
@@ -2806,7 +2862,7 @@ inline ::uint64_t CreateOrderRequest::seller_id() const {
 }
 inline void CreateOrderRequest::set_seller_id(::uint64_t value) {
   _internal_set_seller_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.CreateOrderRequest.seller_id)
 }
 inline ::uint64_t CreateOrderRequest::_internal_seller_id() const {
@@ -2822,7 +2878,7 @@ inline void CreateOrderRequest::_internal_set_seller_id(::uint64_t value) {
 inline void CreateOrderRequest::clear_buyer_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.buyer_id_ = ::uint64_t{0u};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
 }
 inline ::uint64_t CreateOrderRequest::buyer_id() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.CreateOrderRequest.buyer_id)
@@ -2830,7 +2886,7 @@ inline ::uint64_t CreateOrderRequest::buyer_id() const {
 }
 inline void CreateOrderRequest::set_buyer_id(::uint64_t value) {
   _internal_set_buyer_id(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.CreateOrderRequest.buyer_id)
 }
 inline ::uint64_t CreateOrderRequest::_internal_buyer_id() const {
@@ -2901,7 +2957,7 @@ CreateOrderRequest::_internal_mutable_items() {
 inline void CreateOrderRequest::clear_price() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.price_ = ::int64_t{0};
-  ClearHasBit(_impl_._has_bits_[0], 0x00000008U);
+  ClearHasBit(_impl_._has_bits_[0], 0x00000010U);
 }
 inline ::int64_t CreateOrderRequest::price() const {
   // @@protoc_insertion_point(field_get:pandora.trade.v1.CreateOrderRequest.price)
@@ -2909,7 +2965,7 @@ inline ::int64_t CreateOrderRequest::price() const {
 }
 inline void CreateOrderRequest::set_price(::int64_t value) {
   _internal_set_price(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
   // @@protoc_insertion_point(field_set:pandora.trade.v1.CreateOrderRequest.price)
 }
 inline ::int64_t CreateOrderRequest::_internal_price() const {
@@ -2919,6 +2975,61 @@ inline ::int64_t CreateOrderRequest::_internal_price() const {
 inline void CreateOrderRequest::_internal_set_price(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.price_ = value;
+}
+
+// repeated .pandora.trade.v1.TradeItem buyer_items = 5 [json_name = "buyerItems"];
+inline int CreateOrderRequest::_internal_buyer_items_size() const {
+  return _internal_buyer_items().size();
+}
+inline int CreateOrderRequest::buyer_items_size() const {
+  return _internal_buyer_items_size();
+}
+inline void CreateOrderRequest::clear_buyer_items() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.buyer_items_.Clear();
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+}
+inline const ::pandora::trade::v1::TradeItem& CreateOrderRequest::buyer_items(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:pandora.trade.v1.CreateOrderRequest.buyer_items)
+  return _internal_buyer_items().Get(index);
+}
+inline ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL CreateOrderRequest::mutable_buyer_items(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable:pandora.trade.v1.CreateOrderRequest.buyer_items)
+  return _internal_mutable_buyer_items()->Mutable(index);
+}
+inline ::pandora::trade::v1::TradeItem* PROTOBUF_NONNULL CreateOrderRequest::add_buyer_items()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::pandora::trade::v1::TradeItem* _add =
+      _internal_mutable_buyer_items()->InternalAddWithArena(
+          ::google::protobuf::MessageLite::internal_visibility(), GetArena());
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_add:pandora.trade.v1.CreateOrderRequest.buyer_items)
+  return _add;
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>& CreateOrderRequest::buyer_items() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:pandora.trade.v1.CreateOrderRequest.buyer_items)
+  return _internal_buyer_items();
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+CreateOrderRequest::mutable_buyer_items() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_mutable_list:pandora.trade.v1.CreateOrderRequest.buyer_items)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_buyer_items();
+}
+inline const ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>&
+CreateOrderRequest::_internal_buyer_items() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.buyer_items_;
+}
+inline ::google::protobuf::RepeatedPtrField<::pandora::trade::v1::TradeItem>* PROTOBUF_NONNULL
+CreateOrderRequest::_internal_mutable_buyer_items() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.buyer_items_;
 }
 
 // -------------------------------------------------------------------

@@ -25,6 +25,10 @@ type ChatConf struct {
 	// 空 → 队伍频道无法解析成员,TEAM 消息静默降级(弱依赖)。
 	TeamAddr string `yaml:"team_addr,omitempty" json:"team_addr,omitempty"`
 
+	// GuildAddr guild 服务 gRPC 地址(host:port)。GuildService + GroupService 同进程共用此地址。
+	// 空 → 公会 / 群频道无法解析成员,GUILD / GROUP 消息静默降级(弱依赖)。
+	GuildAddr string `yaml:"guild_addr,omitempty" json:"guild_addr,omitempty"`
+
 	// SensitiveWords 敏感词列表(命中后整词替换为等长 *,大小写不敏感)。
 	// 默认空 → 不过滤。仅做最小化屏蔽,真正风控由独立服务接管(后续)。
 	SensitiveWords []string `yaml:"sensitive_words,omitempty" json:"sensitive_words,omitempty"`

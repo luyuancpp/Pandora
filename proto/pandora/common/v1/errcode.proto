@@ -11,7 +11,7 @@
 //   6000-6999   = battle_result
 //   7000-7999   = trade
 //   8000-8999   = dialogue
-//   9000-9999   = chat / friend / locator
+//   9000-9999   = chat / friend / locator / push / guild / group
 //   10000-10999 = data_service
 //   11000-11999 = 预留
 //   12000-12999 = auction(全服拍卖行 / 撮合)
@@ -126,6 +126,23 @@ enum ErrCode {
   // push 服务(W3 ④,2026-06-05)
   ERR_PUSH_OFFLINE_CORRUPTED   = 9301;
   ERR_PUSH_KAFKA_CONSUMER_DOWN = 9302;
+
+  // guild 公会(9400-9499,2026-06-27)
+  ERR_GUILD_NOT_FOUND          = 9401;  // 公会不存在
+  ERR_GUILD_ALREADY_IN_GUILD   = 9402;  // 玩家已在某公会(单归属)
+  ERR_GUILD_FULL               = 9403;  // 公会成员已达上限
+  ERR_GUILD_NOT_LEADER         = 9404;  // 操作需会长权限
+  ERR_GUILD_NO_PERMISSION      = 9405;  // 无权限(审批 / 踢人需会长或官员)
+  ERR_GUILD_NAME_TAKEN         = 9406;  // 公会名已被占用
+  ERR_GUILD_REQUEST_INVALID    = 9407;  // 加入申请不存在 / 非 pending
+  ERR_GUILD_NOT_MEMBER         = 9408;  // 目标不在本公会
+
+  // group 临时群(9500-9599,2026-06-27)
+  ERR_GROUP_NOT_FOUND          = 9501;  // 群不存在
+  ERR_GROUP_FULL               = 9502;  // 群成员已达上限
+  ERR_GROUP_NOT_OWNER          = 9503;  // 操作需群主权限
+  ERR_GROUP_NOT_MEMBER         = 9504;  // 玩家不在群内
+  ERR_GROUP_ALREADY_IN         = 9505;  // 玩家已在群内(拉人幂等命中)
 
   // 10000-10999 data_service
   ERR_DATA_VERSION_MISMATCH    = 10001;

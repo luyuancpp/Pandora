@@ -2,8 +2,9 @@
 #
 # - gRPC :50005 / HTTP :51005(仅 /metrics)
 # - MySQL 强依赖(pandora_social 库:chat_private_messages,私聊离线历史)
-# - Kafka 弱依赖(生产 pandora.chat.{world,team,private} → push 推送)
+# - Kafka 弱依赖(生产 pandora.chat.{world,team,private,guild,group} → push 推送)
 # - team 弱依赖(队伍频道解析成员;addr 空则队伍频道降级)
+# - guild 弱依赖(公会 / 群频道解析成员;addr 空则公会 / 群频道降级)
 # - dev: enable_reflection=true 便于 grpcurl 联调
 
 server:
@@ -38,5 +39,7 @@ chat:
   history_limit: 50
   # team_addr: team 服务 gRPC 地址;空 → 队伍频道降级(弱依赖)
   team_addr: "127.0.0.1:50010"
+  # guild_addr: guild 服务 gRPC 地址(GuildService + GroupService 同进程);空 → 公会 / 群频道降级
+  guild_addr: "127.0.0.1:50008"
   # sensitive_words: 敏感词列表(命中整词替换为等长 *);空 → 不过滤
   sensitive_words: []

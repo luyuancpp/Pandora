@@ -137,6 +137,30 @@ func (s *InventoryService) SettleAuctionMatch(ctx context.Context, req *inventor
 	return &inventoryv1.SettleAuctionMatchResponse{Code: commonv1.ErrCode_OK}, nil
 }
 
+// SettlePlayerTrade 原子结算玩家间点对点交易(系统接口,仅后端内部直连)。
+//
+// 鉴权同 SettleAuctionMatch:经 Envoy 的客户端调用(callerID>0)一律拒绝;合法调用者是
+// trade 服务内网直连(无 x-pandora-player-id 头 → callerID==0)。
+func (s *InventoryService) SettlePlayerTrade(ctx context.Context, req *inventoryv1.SettlePlayerTradeRequest) (*inventoryv1.SettlePlayerTradeResponse, error) {
+	if pmw.PlayerIDFromContext(ctx) != 0 {
+		return &inventoryv1.SettlePlayerTradeResponse{Code: commonv1.ErrCode_ERR_PERMISSION_DENY}, nil
+	}
+	toGrants := func(items []*inventoryv1.ItemGrant) []data.ItemGrant {
+		out := make([]data.ItemGrant, 0, len(items))
+		for _, it := range items {
+			out = append(out, data.ItemGrant{ItemConfigID: it.GetItemConfigId(), Count: it.GetCount()})
+		}
+		return out
+	}
+	err := s.uc.SettlePlayerTrade(ctx,
+		req.GetOrderId(), req.GetSellerId(), req.GetBuyerId(),
+		toGrants(req.GetSellerItems()), toGrants(req.GetBuyerItems()), req.GetPrice())
+	if err != nil {
+		return &inventoryv1.SettlePlayerTradeResponse{Code: toProtoCode(err)}, nil
+	}
+	return &inventoryv1.SettlePlayerTradeResponse{Code: commonv1.ErrCode_OK}, nil
+}
+
 // FreezeForOrder 挂单冻结资产(系统接口,仅后端内部直连)。鉴权同 SettleAuctionMatch:
 // 经 Envoy 的客户端调用(callerID>0)一律拒绝,合法调用者是 auction 服务内网直连。
 func (s *InventoryService) FreezeForOrder(ctx context.Context, req *inventoryv1.FreezeForOrderRequest) (*inventoryv1.FreezeForOrderResponse, error) {

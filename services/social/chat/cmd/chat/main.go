@@ -10,8 +10,8 @@
 //  3. log.Setup → 全局 zap logger
 //  4. MySQL client(强依赖:私聊历史落库不可降级)
 //  5. Snowflake Node(message_id 生成,zone_id 来自 yaml)
-//  6. kafka 三 producer(chat.private/team/world)→ chatPusher(弱依赖)
-//  7. team gRPC client → TeamReader(弱依赖,addr 空则队伍频道降级)
+//  6. kafka 五 producer(chat.private/team/world/guild/group)→ chatPusher(弱依赖)
+//  7. team / guild gRPC client → TeamReader / GuildReader / GroupReader(弱依赖,addr 空则降级)
 //  8. 装配 ChatUsecase → ChatService → gRPC/HTTP server
 //  9. kratos.New(...).Run() 阻塞
 package main
@@ -28,6 +28,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	klog "github.com/go-kratos/kratos/v2/log"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	plog "github.com/luyuancpp/pandora/pkg/log"
 	"github.com/luyuancpp/pandora/pkg/mysqlx"
@@ -112,9 +113,31 @@ func main() {
 		helper.Warnw("msg", "team_addr_empty", "hint", "team channel fan-out disabled")
 	}
 
+	// 6b. guild gRPC client → GuildReader / GroupReader(弱依赖:addr 空则公会 / 群频道降级)。
+	// GuildService + GroupService 同进程,共用 guild_addr;两个 reader 各自拨连。
+	var guildReader biz.GuildReader
+	var groupReader biz.GroupReader
+	if cfg.Chat.GuildAddr != "" {
+		gr := data.NewGrpcGuildReader(cfg.Chat.GuildAddr)
+		defer func() { _ = gr.Close() }()
+		guildReader = gr
+		gpr := data.NewGrpcGroupReader(cfg.Chat.GuildAddr)
+		defer func() { _ = gpr.Close() }()
+		groupReader = gpr
+		helper.Infow("msg", "guild_client_ready", "guild_addr", cfg.Chat.GuildAddr)
+	} else {
+		helper.Warnw("msg", "guild_addr_empty", "hint", "guild / group channel fan-out disabled")
+	}
+
 	// 7. 装配链
 	repo := data.NewMySQLPrivateRepo(db)
-	uc := biz.NewChatUsecase(repo, pusher, teamReader, cfg.Chat)
+	uc := biz.NewChatUsecase(repo, pusher, teamReader, guildReader, groupReader, cfg.Chat)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewChatService(uc, sf)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)
@@ -126,6 +149,7 @@ func main() {
 		"http", cfg.Server.Http.Addr,
 		"kafka_brokers", cfg.Kafka.Brokers,
 		"team_addr", cfg.Chat.TeamAddr,
+		"guild_addr", cfg.Chat.GuildAddr,
 		"max_content_len", cfg.Chat.MaxContentLen,
 	)
 
@@ -141,15 +165,17 @@ func main() {
 	}
 }
 
-// chatPusher 把 biz.ChatPusher 接口适配到三个 kafkax.KeyOrderedProducer。
-// kafka key:私聊 / 队伍 = 收件方 player_id(同接收方保序);世界频道广播 key 空。
+// chatPusher 把 biz.ChatPusher 接口适配到五个 kafkax.KeyOrderedProducer。
+// kafka key:私聊 / 队伍 / 公会 / 群 = 收件方 player_id(同接收方保序);世界频道广播 key 空。
 type chatPusher struct {
 	private *kafkax.KeyOrderedProducer
 	team    *kafkax.KeyOrderedProducer
 	world   *kafkax.KeyOrderedProducer
+	guild   *kafkax.KeyOrderedProducer
+	group   *kafkax.KeyOrderedProducer
 }
 
-// newChatPusher 初始化三 producer;任一失败则关闭已建的并返回 nil(整体降级)。
+// newChatPusher 初始化五 producer;任一失败则关闭已建的并返回 nil(整体降级)。
 func newChatPusher(cfg conf.Config, helper *klog.Helper) *chatPusher {
 	priv, err := kafkax.NewKeyOrderedProducer(cfg.Kafka, kafkax.TopicChatPrivate)
 	if err != nil {
@@ -169,10 +195,28 @@ func newChatPusher(cfg conf.Config, helper *klog.Helper) *chatPusher {
 		_ = team.Close()
 		return nil
 	}
+	guild, err := kafkax.NewKeyOrderedProducer(cfg.Kafka, kafkax.TopicChatGuild)
+	if err != nil {
+		helper.Warnw("msg", "kafka_producer_init_failed", "topic", kafkax.TopicChatGuild, "err", err)
+		_ = priv.Close()
+		_ = team.Close()
+		_ = world.Close()
+		return nil
+	}
+	group, err := kafkax.NewKeyOrderedProducer(cfg.Kafka, kafkax.TopicChatGroup)
+	if err != nil {
+		helper.Warnw("msg", "kafka_producer_init_failed", "topic", kafkax.TopicChatGroup, "err", err)
+		_ = priv.Close()
+		_ = team.Close()
+		_ = world.Close()
+		_ = guild.Close()
+		return nil
+	}
 	helper.Infow("msg", "kafka_producer_ready", "topics", []string{
 		kafkax.TopicChatPrivate, kafkax.TopicChatTeam, kafkax.TopicChatWorld,
+		kafkax.TopicChatGuild, kafkax.TopicChatGroup,
 	})
-	return &chatPusher{private: priv, team: team, world: world}
+	return &chatPusher{private: priv, team: team, world: world, guild: guild, group: group}
 }
 
 func (p *chatPusher) PushPrivate(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error {
@@ -188,6 +232,14 @@ func (p *chatPusher) PushWorld(ctx context.Context, evt *chatv1.ChatPushEvent) e
 	return p.world.Send(ctx, "", evt)
 }
 
+func (p *chatPusher) PushGuild(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error {
+	return p.guild.Send(ctx, strconv.FormatUint(toPlayerID, 10), evt)
+}
+
+func (p *chatPusher) PushGroup(ctx context.Context, toPlayerID uint64, evt *chatv1.ChatPushEvent) error {
+	return p.group.Send(ctx, strconv.FormatUint(toPlayerID, 10), evt)
+}
+
 func (p *chatPusher) Close() {
 	if p.private != nil {
 		_ = p.private.Close()
@@ -197,6 +249,12 @@ func (p *chatPusher) Close() {
 	}
 	if p.world != nil {
 		_ = p.world.Close()
+	}
+	if p.guild != nil {
+		_ = p.guild.Close()
+	}
+	if p.group != nil {
+		_ = p.group.Close()
 	}
 }
 

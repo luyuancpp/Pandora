@@ -27,6 +27,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 
+	"github.com/luyuancpp/pandora/pkg/cellroute/etcdtable"
 	"github.com/luyuancpp/pandora/pkg/grpcclient"
 	"github.com/luyuancpp/pandora/pkg/kafkax"
 	plog "github.com/luyuancpp/pandora/pkg/log"
@@ -120,6 +121,12 @@ func main() {
 	// 7. 装配链
 	repo := data.NewMySQLFriendRepo(db)
 	uc := biz.NewFriendUsecase(repo, pusher, online, cfg.Friend)
+	if closeCell, e := etcdtable.WireRouter(context.Background(), cfg.CellRoute, uc.SetCellRouter); e != nil {
+		helper.Errorw("msg", "cellroute_init_failed", "err", e)
+		os.Exit(1)
+	} else if closeCell != nil {
+		defer func() { _ = closeCell() }()
+	}
 	svc := service.NewFriendService(uc, sf)
 
 	grpcSrv := server.NewGRPCServer(&cfg, svc)

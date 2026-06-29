@@ -102,7 +102,10 @@ func (u *TradeUsecase) SetCellRouter(r *cellroute.Router) {
 }
 
 // CreateOrder 卖方挂单。sellerID 由 service 从 JWT ctx 得到(R5)。
-func (u *TradeUsecase) CreateOrder(ctx context.Context, sellerID, buyerID uint64, items []*tradev1.TradeItem, price int64) (uint64, error) {
+//
+// items = 卖家交付给买家的道具(必填);buyerItems = 买家交付给卖家的道具(可空 = 纯金币购买);
+// price = 买家付卖家的金币(>=0)。道具一律用 item_config_id(uint32,对齐 inventory 可堆叠模型)。
+func (u *TradeUsecase) CreateOrder(ctx context.Context, sellerID, buyerID uint64, items, buyerItems []*tradev1.TradeItem, price int64) (uint64, error) {
 	if sellerID == 0 || buyerID == 0 {
 		return 0, errcode.New(errcode.ErrInvalidArg, "seller / buyer required")
 	}
@@ -112,13 +115,22 @@ func (u *TradeUsecase) CreateOrder(ctx context.Context, sellerID, buyerID uint64
 	if len(items) == 0 {
 		return 0, errcode.New(errcode.ErrInvalidArg, "items required")
 	}
-	if len(items) > u.cfg.MaxItemsPerOrder {
-		return 0, errcode.New(errcode.ErrInvalidArg, "too many items: %d > %d", len(items), u.cfg.MaxItemsPerOrder)
+	if len(items)+len(buyerItems) > u.cfg.MaxItemsPerOrder {
+		return 0, errcode.New(errcode.ErrInvalidArg, "too many items: %d > %d", len(items)+len(buyerItems), u.cfg.MaxItemsPerOrder)
 	}
-	for _, it := range items {
-		if it.GetItemUid() == "" || it.GetCount() <= 0 {
-			return 0, errcode.New(errcode.ErrInvalidArg, "invalid item: uid=%q count=%d", it.GetItemUid(), it.GetCount())
+	validate := func(its []*tradev1.TradeItem) error {
+		for _, it := range its {
+			if it.GetItemConfigId() == 0 || it.GetCount() <= 0 {
+				return errcode.New(errcode.ErrInvalidArg, "invalid item: config_id=%d count=%d", it.GetItemConfigId(), it.GetCount())
+			}
 		}
+		return nil
+	}
+	if err := validate(items); err != nil {
+		return 0, err
+	}
+	if err := validate(buyerItems); err != nil {
+		return 0, err
 	}
 	if price < 0 {
 		return 0, errcode.New(errcode.ErrInvalidArg, "price must be >= 0")
@@ -130,6 +142,7 @@ func (u *TradeUsecase) CreateOrder(ctx context.Context, sellerID, buyerID uint64
 		SellerId:    sellerID,
 		BuyerId:     buyerID,
 		Items:       items,
+		BuyerItems:  buyerItems,
 		Price:       price,
 		State:       tradev1.OrderState_ORDER_STATE_PENDING,
 		CreatedAtMs: now,

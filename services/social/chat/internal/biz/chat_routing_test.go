@@ -43,7 +43,7 @@ func playerInRegion2() uint64 { return uint64(cellroute.LogicalCellCount)/2 + 1 
 
 func newRoutingUC(t *testing.T) *ChatUsecase {
 	t.Helper()
-	return NewChatUsecase(&fakeRepo{}, nil, nil, conf.ChatConf{MaxContentLen: 10, HistoryLimit: 50})
+	return NewChatUsecase(&fakeRepo{}, nil, nil, nil, nil, conf.ChatConf{MaxContentLen: 10, HistoryLimit: 50})
 }
 
 func TestPrivateBridgeKey_IsTargetPlayerID(t *testing.T) {

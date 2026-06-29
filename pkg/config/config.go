@@ -22,6 +22,8 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
+
+	"github.com/luyuancpp/pandora/pkg/cellroute"
 )
 
 // Base 是所有 Pandora 服务的通用配置基类。
@@ -56,6 +58,10 @@ type Base struct {
 
 	// KillSwitch RPC 级临时关停(Kill-Switch)
 	KillSwitch KillSwitchConf `yaml:"killswitch,omitempty" json:"killswitch,omitempty"`
+
+	// CellRoute 蜂窝扩容部署拓扑(scale-cellular-20m.md):mode 空=单 Cell 不路由,
+	// static/etcd=多 Cell。各服务 main 用 cellroute.BuildRouter(cfg.CellRoute) 装配。
+	CellRoute cellroute.RouterConfig `yaml:"cell_route,omitempty" json:"cell_route,omitempty"`
 }
 
 // Server Kratos 风格的 server 监听配置(替代 go-zero zrpc.RpcServerConf)。
