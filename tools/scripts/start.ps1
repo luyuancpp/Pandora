@@ -4,8 +4,8 @@
 
 .DESCRIPTION
   一条命令把后端跑起来,覆盖 5 套环境(DS 分配模式随环境变):
-    local    本地 windows 调试 —— 基础设施在 docker,18 个 go 服务以宿主进程跑(可断点);DS=local(Windows PandoraServer.exe)
-    docker   本地 docker 启动   —— 基础设施 + 18 个 go 服务全跑在本机 docker;DS=mock(容器内无真 DS)
+    local    本地 windows 调试 —— 基础设施在 docker,19 个 go 服务以宿主进程跑(可断点);DS=local(Windows PandoraServer.exe)
+    docker   本地 docker 启动   —— 基础设施 + 19 个 go 服务全跑在本机 docker;DS=mock(容器内无真 DS)
     intranet 内网测试服     —— 同 docker 全容器,但绑定内网 IP 供多人联调;DS=mock
     online   线上 k8s 集群   —— kustomize 部署到远端 k8s + Agones 真 Linux DS;DS=agones
                              用 -Env test|prod 区分「测试服集群」与「生产 kbs 集群」(不同 kube-context)
@@ -59,7 +59,8 @@ param(
     [switch]$Reset,       # 一键重置:彻底清掉旧状态再全新启动(线上 online 模式禁用)
     [switch]$Status,      # 查看状态
     [switch]$Check,       # 只检查工具链,不启动
-    [switch]$Install,     # 工具缺失时尝试 winget 安装(默认不安装)
+    [switch]$Install,     # 工具缺失时尝试 winget 安装(默认不安装;不含 Docker Desktop)
+    [switch]$InstallDocker, # 显式同意用 winget 装 Docker Desktop(装前确认虚拟化;装后仍需重启+手动启动)
     [switch]$NoInstall,   # 兼容旧参数;等同于不传 -Install
 
     # online 模式参数
@@ -70,7 +71,7 @@ param(
     [string]$DsGatewayAddr, # online:DS 回调入口(如 pandora-envoy.pandora.svc:8444)
     [ValidateSet('0', '1')]
     [string]$DsGatewayTls = '1', # online:DS 回调是否 TLS(线上默认 1)
-    [switch]$BuildPush    # online:本地构建并推送 18 个镜像到 -Registry(远端发布动作,需人工授权)
+    [switch]$BuildPush    # online:本地构建并推送 19 个镜像到 -Registry(远端发布动作,需人工授权)
 )
 
 $ErrorActionPreference = 'Stop'
@@ -148,10 +149,75 @@ function Test-DockerRunning {
     return ($LASTEXITCODE -eq 0)
 }
 
-# 确保 docker 命令存在且 daemon 在跑(Docker Desktop 不能自动装,只能提示)
+# 确认 Docker Desktop 跑得起来的前置:CPU 虚拟化已开 + WSL2 可用。
+# 返回 $true=就绪;$false=有缺项(已打印指引)。仅做只读检查,不改本机环境。
+function Test-DockerPrereq {
+    $ok = $true
+
+    # ① CPU 虚拟化(BIOS/固件层)。Win32_Processor.VirtualizationFirmwareEnabled。
+    try {
+        $virt = (Get-CimInstance Win32_Processor -ErrorAction Stop |
+                 Select-Object -First 1 -ExpandProperty VirtualizationFirmwareEnabled)
+        if ($virt) {
+            Write-Ok "CPU 虚拟化已开启(VirtualizationFirmwareEnabled=True)"
+        } else {
+            Write-Err "CPU 虚拟化未开启 —— 请进 BIOS 开 Intel VT-x / AMD-V 后再装 Docker。"
+            $ok = $false
+        }
+    } catch {
+        Write-Warn "无法读取 CPU 虚拟化状态($($_.Exception.Message));跳过该项检查。"
+    }
+
+    # ② WSL2(Docker Desktop 默认后端)。有 wsl 命令即视为可用;没有给出启用指引。
+    if (Test-CommandExists 'wsl') {
+        Write-Ok "WSL 命令可用(Docker Desktop 走 WSL2 后端)"
+    } else {
+        Write-Warn "未检测到 wsl 命令 —— Docker Desktop 首次启动会引导启用 WSL2。"
+        Write-Host "       如启动失败,管理员执行:wsl --install  然后重启。" -ForegroundColor Yellow
+    }
+
+    return $ok
+}
+
+# winget 安装 Docker Desktop(仅在显式 -InstallDocker 时调用)。
+# 注意:装完仍需『重启系统 + 手动启动 Docker Desktop + 新开终端』,脚本替不了这步。
+function Install-DockerDesktop {
+    if (-not (Test-CommandExists 'winget')) {
+        Write-Err "未找到 winget,无法自动装 Docker Desktop;请手动装:https://www.docker.com/products/docker-desktop/"
+        return $false
+    }
+    Write-Step "用 winget 安装 Docker Desktop"
+    if (-not (Test-DockerPrereq)) {
+        Write-Err "虚拟化前置未满足,已中止 Docker 安装(见上方指引)。"
+        return $false
+    }
+    Write-Info "  winget install --id Docker.DockerDesktop ..."
+    winget install --id Docker.DockerDesktop --silent --accept-source-agreements --accept-package-agreements | Out-Null
+    if (Test-CommandExists 'docker') {
+        Write-Ok "Docker Desktop 已安装。"
+    } else {
+        Write-Warn "Docker Desktop 已尝试安装,但当前终端还找不到 docker 命令(PATH 未刷新属正常)。"
+    }
+    Write-Warn "Docker Desktop 装完还需手动收尾:"
+    Write-Host "       ① 重启系统(首次装基本都要)" -ForegroundColor Yellow
+    Write-Host "       ② 启动 Docker Desktop,等鲸鱼图标变绿(daemon 起来)" -ForegroundColor Yellow
+    Write-Host "       ③ 新开一个终端,重跑:pwsh tools/scripts/start.ps1 -Mode $Mode" -ForegroundColor Yellow
+    return $false  # 本次不继续启动,交回控制权让用户重启
+}
+
+# 确保 docker 命令存在且 daemon 在跑。
+# Docker Desktop 不随 -Install 自动装(需重启+引导);只有显式 -InstallDocker 才用 winget 装。
 function Ensure-Docker {
-    $ok = Ensure-Tool -Name 'Docker' -CheckCmd 'docker' -ManualUrl 'https://www.docker.com/products/docker-desktop/'
-    if (-not $ok) { return $false }
+    if (-not (Test-CommandExists 'docker')) {
+        Write-Warn "Docker 未安装"
+        if ($InstallDocker -and -not $Check) {
+            return (Install-DockerDesktop)
+        }
+        Write-Host "       手动安装:https://www.docker.com/products/docker-desktop/" -ForegroundColor Yellow
+        Write-Host "       或让脚本用 winget 装(装前确认虚拟化):追加 -InstallDocker" -ForegroundColor Yellow
+        return $false
+    }
+    Write-Ok "Docker 已就绪"
     if ($Check) { return $true }
     if (-not (Test-DockerRunning)) {
         Write-Err "Docker 已装但 daemon 没在跑 —— 请启动 Docker Desktop 后重试。"
@@ -199,7 +265,7 @@ function Invoke-Local {
         & "$ScriptDir/dev_all.ps1" -Down
         return
     }
-    Write-Step "local 模式:基础设施(docker) + 18 个 go 服务(宿主进程)"
+    Write-Step "local 模式:基础设施(docker) + 19 个 go 服务(宿主进程)"
     Write-Info "策划本地联调用这个;服务可在 VS Code 断点调试。"
     & "$ScriptDir/dev_all.ps1" -Profile $Profile
 }
@@ -213,7 +279,7 @@ function Invoke-Docker {
         & "$ScriptDir/dev_down.ps1"
         return
     }
-    Write-Step "docker 模式:基础设施 + 18 个 go 服务全部容器化"
+    Write-Step "docker 模式:基础设施 + 19 个 go 服务全部容器化"
 
     # local 宿主进程会抢同一批端口,先停掉
     Write-Info "先停掉可能在跑的宿主 go 服务(避免端口冲突)..."
@@ -238,7 +304,7 @@ function Invoke-Docker {
 }
 
 # ===== intranet 模式(内网测试服:全容器,绑内网 IP 供多人联调)=====
-# 与 docker 一致(基础设施 + 15 服务全容器,DS=mock),区别只是面向局域网:
+# 与 docker 一致(基础设施 + 19 服务全容器,DS=mock),区别只是面向局域网:
 #   - compose 端口已绑 0.0.0.0,内网其它机器可直接连本机内网 IP
 #   - 打印内网访问地址,客户端把后端指向 <内网IP>:<port> 即可
 function Resolve-LanIp {
@@ -400,7 +466,7 @@ function Invoke-K8s {
     Write-Step "[4/7] 安装 Agones + apply RBAC/Fleet(真 Linux DS)"
     Apply-AgonesManifests -InstallAgones
 
-    Write-Step "[5/7] 构建 18 个服务镜像"
+    Write-Step "[5/7] 构建 19 个服务镜像"
     Build-AllImages
 
     Write-Step "[6/7] 把镜像 load 进 minikube"
@@ -414,7 +480,7 @@ function Invoke-K8s {
     kubectl apply -k $servicesDir
     Assert-LastExit 'kubectl apply -k services'
     # 镜像 tag 固定为 :dev,重建/重 load 后 image 字符串不变 -> apply 报 unchanged,旧 Pod 不会换。
-    # 按名强制滚动重启这 18 个业务 Deployment(不碰 infra,避免重启 kafka 又触发依赖服务 CrashLoop),
+    # 按名强制滚动重启这 19 个业务 Deployment(不碰 infra,避免重启 kafka 又触发依赖服务 CrashLoop),
     # 确保跑的是刚 build 的新二进制。
     Write-Info "rollout restart 业务 Deployment(同 :dev tag 重建后强制换 Pod)..."
     foreach ($svc in (Get-ServiceList)) {
@@ -465,7 +531,7 @@ function Invoke-Online {
     }
 
     if ($BuildPush) {
-        Write-Step "构建并推送 18 个 Go 服务镜像到 $Registry"
+        Write-Step "构建并推送 19 个 Go 服务镜像到 $Registry"
         Build-AllImages
         foreach ($svc in (Get-ServiceList)) {
             $local  = "pandora/$($svc.Name):dev"

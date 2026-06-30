@@ -6,7 +6,7 @@
   面向策划的极简入口:不需要装 Go、不需要会编译,机器上只要有 Docker Desktop。
   做的事:
     1) 检查 Docker —— 没装就引导安装(能 winget 就自动装),没在跑就帮忙把 Docker Desktop 拉起来并等待就绪。
-    2) Docker 就绪后,把整套后端跑起来(基础设施 + 15 个 go 服务全在容器里)。
+    2) Docker 就绪后,把整套后端跑起来(基础设施 + 19 个 go 服务全在容器里)。
        首次会在容器内编译镜像(稍慢),之后复用缓存秒起。
   本脚本只是 docker 模式(tools/scripts/start.ps1 -Mode docker)的「策划友好包装」,
   真正的构建/启动仍复用那条已验证的链路,不重复造轮子。
@@ -15,7 +15,9 @@
   双击 仓库根目录\策划一键启动.cmd          # 启动整套后端(docker,不含战斗 DS)
   双击 仓库根目录\策划一键停止.cmd          # 停止
   双击 仓库根目录\策划一键启动-含战斗.cmd   # 本地战斗版(宿主 go 进程 + Windows DS)
+  双击 仓库根目录\内网服务器一键启动.cmd     # 内网服务器(全容器 + 绑内网 IP,供策划客户端连)
   pwsh tools/scripts/play.ps1                # 启动(docker)
+  pwsh tools/scripts/play.ps1 -Intranet     # 内网服务器(绑内网 IP,打印给策划的连接地址)
   pwsh tools/scripts/play.ps1 -Battle       # 本地战斗版
   pwsh tools/scripts/play.ps1 -Battle -OpenEditor  # 启动后端后打开 UE Editor 当客户端
   pwsh tools/scripts/play.ps1 -Battle -OpenClient  # 启动后端后打开已打包 Windows 客户端
@@ -27,6 +29,7 @@ param(
     [switch]$Stop,     # 停止整套后端
     [switch]$Status,   # 只看状态,不启动
     [switch]$Battle,   # 本地战斗模式:宿主 go 进程 + Windows DS(进 hub→匹配→battle 战斗)
+    [switch]$Intranet, # 内网服务器模式:全容器 + 绑内网 IP,供局域网内策划客户端连(DS=mock)
     [switch]$OpenEditor, # 启动完成后打开发行版 UE Editor,用 PIE/Standalone 当客户端进服
     [switch]$OpenClient  # 启动完成后打开已打包 Windows 客户端
 )
@@ -103,6 +106,25 @@ function Get-DockerDesktopExe {
     return $null
 }
 
+# 装 Docker 前确认 CPU 虚拟化已开(没开装了也起不来,先拦住省得白折腾)。
+# 只做只读检查:返回 $false 表示明确未开启;读不到状态时放行(返回 $true)。
+function Test-VirtualizationOn {
+    try {
+        $virt = (Get-CimInstance Win32_Processor -ErrorAction Stop |
+                 Select-Object -First 1 -ExpandProperty VirtualizationFirmwareEnabled)
+        if ($virt) {
+            Write-Ok 'CPU 虚拟化已开启'
+            return $true
+        }
+        Write-Err 'CPU 虚拟化没开 —— Docker Desktop 装了也起不来。'
+        Write-Host '       请重启进 BIOS 开启 Intel VT-x / AMD-V(虚拟化),再双击本脚本。' -ForegroundColor Yellow
+        return $false
+    } catch {
+        # 读不到就别拦策划,放行交给 Docker Desktop 自己引导
+        return $true
+    }
+}
+
 # 确保 Docker 命令存在
 function Ensure-DockerInstalled {
     if (Test-CommandExists 'docker') {
@@ -110,6 +132,9 @@ function Ensure-DockerInstalled {
         return $true
     }
     Write-Warn 'Docker 未安装'
+    if (-not (Test-VirtualizationOn)) {
+        return $false
+    }
     if (Test-CommandExists 'winget') {
         Write-Info '尝试用 winget 安装 Docker Desktop(可能要几分钟)...'
         winget install --id Docker.DockerDesktop --silent --accept-source-agreements --accept-package-agreements | Out-Null
@@ -206,6 +231,8 @@ if (-not (Test-Path $StartPs1)) {
 if ($Status) {
     if ($Battle) {
         & $StartPs1 -Mode local -Status
+    } elseif ($Intranet) {
+        & $StartPs1 -Mode intranet -Status
     } else {
         & $StartPs1 -Mode docker -Status
     }
@@ -221,6 +248,8 @@ if ($Stop) {
     Write-Step '停止整套后端'
     if ($Battle) {
         & $StartPs1 -Mode local -Down
+    } elseif ($Intranet) {
+        & $StartPs1 -Mode intranet -Down
     } else {
         & $StartPs1 -Mode docker -Down
     }
@@ -231,7 +260,7 @@ if ($Stop) {
 # ===== 本地战斗版:宿主 go 进程 + Windows DS(进 hub → 匹配 → battle 战斗)=====
 if ($Battle) {
     Write-Step '本地战斗版预检(需 Go + Windows DS)'
-    Write-Info 'docker 版只跑 15 个后端服务,战斗 DS 是 Windows 程序、跑不进 Linux 容器,'
+    Write-Info 'docker 版只跑 19 个后端服务,战斗 DS 是 Windows 程序、跑不进 Linux 容器,'
     Write-Info '所以「本地进战斗」走宿主 go 进程 + 本机 Windows DS。'
     if (-not (Test-BattlePrerequisites)) {
         Write-Err '本地战斗版前置条件不满足,见上方提示。'
@@ -262,12 +291,39 @@ if ($Battle) {
     exit $rc
 }
 
+# ===== 内网服务器版:全容器 + 绑内网 IP,供局域网内策划客户端连(DS=mock)=====
+if ($Intranet) {
+    Write-Step '内网服务器版(全容器,绑内网 IP,供多人连)'
+    Write-Info '这台机器当「内网测试服」:基础设施 + 后端服务都跑在本机容器里,'
+    Write-Info '策划只需在各自客户端填本机内网 IP 就能连进来,他们不用装 Docker。'
+
+    Write-Step '检查 Docker'
+    if (-not (Ensure-DockerInstalled)) { exit 1 }
+    if (-not (Ensure-DockerRunning))   { exit 1 }
+
+    # 委托 intranet 模式:同 docker 全容器(DS=mock),但绑 0.0.0.0 并打印内网地址。
+    & $StartPs1 -Mode intranet
+    $rc = $LASTEXITCODE
+    Write-Host ''
+    if ($rc -eq 0) {
+        Write-Ok '内网测试服已启动!上面绿色行里的「内网 IP 地址」发给策划,'
+        Write-Host '  - 策划把 UE 客户端后端地址指向那个 https://<内网IP>:8443 即可登录。' -ForegroundColor Green
+        Write-Host '  - 策划机不用装 Docker / 不用装 Go,只要能连内网。' -ForegroundColor Green
+        Write-Host '  - DS=mock:能测登录/大厅/业务,但进不了真实战斗 DS。' -ForegroundColor Yellow
+        Write-Host '  - 看状态:        pwsh tools/scripts/play.ps1 -Intranet -Status' -ForegroundColor DarkGray
+        Write-Host '  - 停止:          pwsh tools/scripts/play.ps1 -Intranet -Stop' -ForegroundColor DarkGray
+    } else {
+        Write-Err '启动过程中出错了,请把上面的红色 [ERR] 信息发给后端同学。'
+    }
+    exit $rc
+}
+
 # 启动:先把 Docker 准备好
 Write-Step '检查 Docker'
 if (-not (Ensure-DockerInstalled)) { exit 1 }
 if (-not (Ensure-DockerRunning))   { exit 1 }
 
-# 委托给已验证的 docker 模式:基础设施 + 15 个 go 服务全容器化
+# 委托给已验证的 docker 模式:基础设施 + 19 个 go 服务全容器化
 # (首次会在容器内编译镜像,稍慢;之后复用缓存。策划本机不需要装 Go。)
 & $StartPs1 -Mode docker
 $rc = $LASTEXITCODE
