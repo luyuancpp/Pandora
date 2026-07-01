@@ -4,16 +4,10 @@
 # 等容器 healthy 后,再按依赖顺序拉起 Go 业务服务。
 #
 # 用法:
-#   # 起全部业务服务
+#   # 起全部业务服务(默认)
 #   pwsh tools/scripts/dev_all.ps1
 #
-#   # 起"登录 + 组队"测试需要的最小集(UE 测登录/组队)
-#   pwsh tools/scripts/dev_all.ps1 -Profile login
-#
-#   # 起完整主链路服务(登录→组队→匹配→拉DS→结算)
-#   pwsh tools/scripts/dev_all.ps1 -Profile match
-#
-#   # 排除某个服务(留给 VS Code 断点调试)
+#   # 全起但排除某个服务(留给 VS Code 断点调试)
 #   pwsh tools/scripts/dev_all.ps1 -Exclude team
 #
 #   # 全停(基础设施 + 业务服务)
@@ -21,8 +15,6 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('login', 'match', 'all')]
-    [string]$Profile = 'all',
     [string[]]$Exclude = @(),
     [switch]$Pull,
     [switch]$Down
@@ -51,5 +43,5 @@ if ($LASTEXITCODE -ne 0) {
 # 2) 业务服务
 Write-Host ""
 Write-Host "===== [2/2] 业务服务 =====" -ForegroundColor Cyan
-& "$ScriptDir/run_services.ps1" -Profile $Profile -Exclude $Exclude
+& "$ScriptDir/run_services.ps1" -Exclude $Exclude
 exit $LASTEXITCODE

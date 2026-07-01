@@ -425,9 +425,9 @@ if ($Battle) {
         if (-not (Ensure-MkcertInstalled)) { exit 1 }
     }
 
-    # local 模式 + match 档:基础设施(docker) + 完整主链路 go 服务(宿主进程),
+    # local 模式:基础设施(docker) + 全部 go 服务(宿主进程),
     # ds_allocator 走 mode=local,匹配成局后直接 exec 本机 Windows DS。
-    & $StartPs1 -Mode local -Profile match
+    & $StartPs1 -Mode local
     $rc = $LASTEXITCODE
     Write-Host ''
     if ($rc -eq 0) {

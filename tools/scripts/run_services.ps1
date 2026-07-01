@@ -3,17 +3,14 @@
 # 大厂本地多服务开发的"进程编排"层(等价 Procfile / goreman / tilt,但零额外依赖)。
 # 基础设施(MySQL/Redis/Kafka/etcd/Envoy)由 dev_up.ps1 负责,本脚本只管 Go 业务服务。
 #
-# 用法:
-#   # 起"登录 + 组队"测试需要的最小服务集(UE 测登录/组队用这个)
+# 用法(只有两种启动方式:全起 或 单起某一个,不做分档启动):
+#   # 起全部业务服务(默认)
 #   pwsh tools/scripts/run_services.ps1
 #
-#   # 起完整主链路(登录→组队→匹配→拉DS→结算)全部 9 个服务
-#   pwsh tools/scripts/run_services.ps1 -Profile match
+#   # 只起单个服务
+#   pwsh tools/scripts/run_services.ps1 -Service team
 #
-#   # 起全部服务
-#   pwsh tools/scripts/run_services.ps1 -Profile all
-#
-#   # 起 profile 里除 team 外的全部服务(team 留给 VS Code 断点调试)
+#   # 全起但排除某个服务(team 留给 VS Code 断点调试)
 #   pwsh tools/scripts/run_services.ps1 -Exclude team
 #
 #   # 查看状态 / 看日志 / 重启单个 / 全停
@@ -27,13 +24,10 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('login', 'match', 'all')]
-    [string]$Profile = 'login',
-
     [ValidateSet('up', 'down', 'status', 'logs', 'restart', 'build')]
     [string]$Action = 'up',
 
-    # 起 profile 时排除的服务(留给 IDE 调试);也可配合 restart/logs/foreground 指定单个服务
+    # 全起时排除的服务(留给 IDE 调试);也可配合 restart/logs/foreground 指定单个服务
     [string[]]$Exclude = @(),
 
     # 指定单个服务(logs / restart / -Foreground 时使用)
@@ -66,30 +60,29 @@ $LogDir = Join-Path $RunDir 'logs'
 New-Item -ItemType Directory -Force -Path $BinDir, $LogDir | Out-Null
 
 # ===== 服务清单(数组顺序 = 依赖启动顺序:leaf 依赖在前,login 最后)=====
-# Profiles:
-#   login = 测登录/组队最小集(player_locator + hub_allocator + push + team + login)
-#   match = 完整主链路(在 login 基础上 + player + ds_allocator + battle_result + matchmaker)
-#   all   = 全部 19 个服务（含 social/friend、social/chat、social/guild、social/mail、social/dialogue、data/data_service、economy/trade、economy/inventory、economy/auction、runtime/leaderboard）
+# 全部 19 个服务(含 social/friend、social/chat、social/guild、social/mail、social/dialogue、
+# data/data_service、economy/trade、economy/inventory、economy/auction、runtime/leaderboard 等)。
+# 启动策略:要么全起(默认),要么用 -Service 单起某一个,不做分档启动。
 $Services = @(
-    @{ Name = 'player_locator'; Dir = 'services/runtime/player_locator';   Cmd = 'locator';        Conf = 'etc/locator-dev.yaml';        Port = 50006; Profiles = @('login', 'match', 'all') }
-    @{ Name = 'hub_allocator';  Dir = 'services/battle/hub_allocator';      Cmd = 'hub_allocator';  Conf = 'etc/hub_allocator-dev.yaml';  Port = 50021; Profiles = @('login', 'match', 'all') }
-    @{ Name = 'player';         Dir = 'services/account/player';            Cmd = 'player';         Conf = 'etc/player-dev.yaml';         Port = 50002; Profiles = @('match', 'all') }
-    @{ Name = 'ds_allocator';   Dir = 'services/battle/ds_allocator';       Cmd = 'ds_allocator';   Conf = 'etc/ds_allocator-dev.yaml';   Port = 50020; Profiles = @('match', 'all') }
-    @{ Name = 'push';           Dir = 'services/runtime/push';              Cmd = 'push';           Conf = 'etc/push-dev.yaml';           Port = 50014; Profiles = @('login', 'match', 'all') }
-    @{ Name = 'team';           Dir = 'services/matchmaking/team';          Cmd = 'team';           Conf = 'etc/team-dev.yaml';           Port = 50010; Profiles = @('login', 'match', 'all') }
-    @{ Name = 'friend';         Dir = 'services/social/friend';             Cmd = 'friend';         Conf = 'etc/friend-dev.yaml';         Port = 50004; Profiles = @('all') }
-    @{ Name = 'chat';           Dir = 'services/social/chat';               Cmd = 'chat';           Conf = 'etc/chat-dev.yaml';           Port = 50005; Profiles = @('all') }
-    @{ Name = 'guild';          Dir = 'services/social/guild';              Cmd = 'guild';          Conf = 'etc/guild-dev.yaml';          Port = 50008; Profiles = @('all') }
-    @{ Name = 'mail';           Dir = 'services/social/mail';               Cmd = 'mail';           Conf = 'etc/mail-dev.yaml';           Port = 50009; Profiles = @('all') }
-    @{ Name = 'dialogue';       Dir = 'services/social/dialogue';           Cmd = 'dialogue';       Conf = 'etc/dialogue-dev.yaml';       Port = 50013; Profiles = @('all') }
-    @{ Name = 'data_service';   Dir = 'services/data/data_service';         Cmd = 'data_service';   Conf = 'etc/data_service-dev.yaml';   Port = 50003; Profiles = @('all') }
-    @{ Name = 'trade';          Dir = 'services/economy/trade';             Cmd = 'trade';          Conf = 'etc/trade-dev.yaml';          Port = 50012; Profiles = @('all') }
-    @{ Name = 'inventory';      Dir = 'services/economy/inventory';         Cmd = 'inventory';      Conf = 'etc/inventory-dev.yaml';      Port = 50015; Profiles = @('all') }
-    @{ Name = 'leaderboard';    Dir = 'services/runtime/leaderboard';       Cmd = 'leaderboard';    Conf = 'etc/leaderboard-dev.yaml';    Port = 50007; Profiles = @('all') }
-    @{ Name = 'auction';        Dir = 'services/economy/auction';           Cmd = 'auction';        Conf = 'etc/auction-dev.yaml';        Port = 50016; Profiles = @('all') }
-    @{ Name = 'battle_result';  Dir = 'services/battle/battle_result';      Cmd = 'battle_result';  Conf = 'etc/battle_result-dev.yaml';  Port = 50022; Profiles = @('match', 'all') }
-    @{ Name = 'matchmaker';     Dir = 'services/matchmaking/matchmaker';    Cmd = 'matchmaker';     Conf = 'etc/matchmaker-dev.yaml';     Port = 50011; Profiles = @('match', 'all') }
-    @{ Name = 'login';          Dir = 'services/account/login';             Cmd = 'login';          Conf = 'etc/login-dev.yaml';          Port = 50001; Profiles = @('login', 'match', 'all') }
+    @{ Name = 'player_locator'; Dir = 'services/runtime/player_locator';   Cmd = 'locator';        Conf = 'etc/locator-dev.yaml';        Port = 50006 }
+    @{ Name = 'hub_allocator';  Dir = 'services/battle/hub_allocator';      Cmd = 'hub_allocator';  Conf = 'etc/hub_allocator-dev.yaml';  Port = 50021 }
+    @{ Name = 'player';         Dir = 'services/account/player';            Cmd = 'player';         Conf = 'etc/player-dev.yaml';         Port = 50002 }
+    @{ Name = 'ds_allocator';   Dir = 'services/battle/ds_allocator';       Cmd = 'ds_allocator';   Conf = 'etc/ds_allocator-dev.yaml';   Port = 50020 }
+    @{ Name = 'push';           Dir = 'services/runtime/push';              Cmd = 'push';           Conf = 'etc/push-dev.yaml';           Port = 50014 }
+    @{ Name = 'team';           Dir = 'services/matchmaking/team';          Cmd = 'team';           Conf = 'etc/team-dev.yaml';           Port = 50010 }
+    @{ Name = 'friend';         Dir = 'services/social/friend';             Cmd = 'friend';         Conf = 'etc/friend-dev.yaml';         Port = 50004 }
+    @{ Name = 'chat';           Dir = 'services/social/chat';               Cmd = 'chat';           Conf = 'etc/chat-dev.yaml';           Port = 50005 }
+    @{ Name = 'guild';          Dir = 'services/social/guild';              Cmd = 'guild';          Conf = 'etc/guild-dev.yaml';          Port = 50008 }
+    @{ Name = 'mail';           Dir = 'services/social/mail';               Cmd = 'mail';           Conf = 'etc/mail-dev.yaml';           Port = 50009 }
+    @{ Name = 'dialogue';       Dir = 'services/social/dialogue';           Cmd = 'dialogue';       Conf = 'etc/dialogue-dev.yaml';       Port = 50013 }
+    @{ Name = 'data_service';   Dir = 'services/data/data_service';         Cmd = 'data_service';   Conf = 'etc/data_service-dev.yaml';   Port = 50003 }
+    @{ Name = 'trade';          Dir = 'services/economy/trade';             Cmd = 'trade';          Conf = 'etc/trade-dev.yaml';          Port = 50012 }
+    @{ Name = 'inventory';      Dir = 'services/economy/inventory';         Cmd = 'inventory';      Conf = 'etc/inventory-dev.yaml';      Port = 50015 }
+    @{ Name = 'leaderboard';    Dir = 'services/runtime/leaderboard';       Cmd = 'leaderboard';    Conf = 'etc/leaderboard-dev.yaml';    Port = 50007 }
+    @{ Name = 'auction';        Dir = 'services/economy/auction';           Cmd = 'auction';        Conf = 'etc/auction-dev.yaml';        Port = 50016 }
+    @{ Name = 'battle_result';  Dir = 'services/battle/battle_result';      Cmd = 'battle_result';  Conf = 'etc/battle_result-dev.yaml';  Port = 50022 }
+    @{ Name = 'matchmaker';     Dir = 'services/matchmaking/matchmaker';    Cmd = 'matchmaker';     Conf = 'etc/matchmaker-dev.yaml';     Port = 50011 }
+    @{ Name = 'login';          Dir = 'services/account/login';             Cmd = 'login';          Conf = 'etc/login-dev.yaml';          Port = 50001 }
 )
 
 function Get-Service([string]$name) {
@@ -102,8 +95,9 @@ function Get-Service([string]$name) {
     return $svc
 }
 
-function Get-ProfileServices {
-    $Services | Where-Object { $_.Profiles -contains $Profile -and $Exclude -notcontains $_.Name }
+function Get-TargetServices {
+    # 全起策略:默认全部服务,仅剔除 -Exclude 指定的(留给 IDE 断点调试)
+    $Services | Where-Object { $Exclude -notcontains $_.Name }
 }
 
 function Get-PidFile($svc) { Join-Path $LogDir "$($svc.Name).pid" }
@@ -261,7 +255,7 @@ switch ($Action) {
     }
 
     'build' {
-        $targets = if ($Service) { @(Get-Service $Service) } else { Get-ProfileServices }
+        $targets = if ($Service) { @(Get-Service $Service) } else { Get-TargetServices }
         Write-Host "===== 构建 ($($targets.Count) 个) =====" -ForegroundColor Cyan
         foreach ($svc in $targets) { Build-Service $svc | Out-Null }
         Write-Host "[done] 构建完成" -ForegroundColor Green
@@ -295,10 +289,10 @@ switch ($Action) {
             break
         }
 
-        $targets = if ($Service) { @(Get-Service $Service) } else { Get-ProfileServices }
-        if ($targets.Count -eq 0) { Write-Host "[!] profile '$Profile' 排除后无服务可启动" -ForegroundColor Yellow; break }
+        $targets = if ($Service) { @(Get-Service $Service) } else { Get-TargetServices }
+        if ($targets.Count -eq 0) { Write-Host "[!] 排除后无服务可启动" -ForegroundColor Yellow; break }
 
-        Write-Host "===== 启动业务服务 (profile=$Profile, $($targets.Count) 个) =====" -ForegroundColor Cyan
+        Write-Host "===== 启动业务服务 ($($targets.Count) 个) =====" -ForegroundColor Cyan
         if ($Exclude.Count -gt 0) { Write-Host "排除: $($Exclude -join ', ')  (留给 IDE 调试)" -ForegroundColor Yellow }
         Write-Host ""
 

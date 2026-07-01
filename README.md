@@ -66,8 +66,8 @@ pwsh tools/scripts/play.ps1 -Battle -OpenClient
 
 | 模式      | 说明                                                          | DS   | 命令 |
 |-----------|---------------------------------------------------------------|------|------|
-| `local`   | 基础设施在 docker,go 服务宿主进程(可断点调试,**策划首选**)  | local | `start.ps1 -Mode local -Profile match` |
-| `docker`  | 基础设施 + 16 个 go 服务全部容器化                            | mock | `start.ps1 -Mode docker` |
+| `local`   | 基础设施在 docker,go 服务宿主进程(可断点调试,**策划首选**)  | local | `start.ps1 -Mode local` |
+| `docker`  | 基础设施 + 19 个 go 服务全部容器化                            | mock | `start.ps1 -Mode docker` |
 | `intranet`| 同 docker 全容器,绑内网 IP 供多人联调                         | mock | `start.ps1 -Mode intranet` |
 | `k8s`     | 本机 minikube + Agones,真 Linux DS(线上等价)                | agones | `start.ps1 -Mode k8s` |
 | `online`  | 部署到远端 k8s(需人工授权并确认 kube-context,谨慎)         | agones | 见下方真 DS 参数 |

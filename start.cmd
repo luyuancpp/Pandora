@@ -16,7 +16,7 @@ rem
 rem  命令行用法(可传参,转发给 start.ps1):
 rem     start.cmd -Mode docker
 rem     start.cmd -Mode k8s
-rem     start.cmd -Mode local -Profile match
+rem     start.cmd -Mode local
 rem     start.cmd -Status
 rem     start.cmd -Check
 rem     start.cmd -Mode docker -Down

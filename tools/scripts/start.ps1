@@ -17,8 +17,7 @@
   只有显式传 -Install 才会尝试用 winget 安装。-Check 只检查不启动。
 
 .EXAMPLE
-  pwsh tools/scripts/start.ps1                      # 默认 local 模式(本地 windows 调试)
-  pwsh tools/scripts/start.ps1 -Mode local -Profile match
+  pwsh tools/scripts/start.ps1                      # 默认 local 模式(本地 windows 调试,全部服务)
   pwsh tools/scripts/start.ps1 -Mode docker
   pwsh tools/scripts/start.ps1 -Mode intranet                       # 内网测试服(全容器,绑内网 IP)
   pwsh tools/scripts/start.ps1 -Mode k8s                            # 本地 minikube + Agones 真 DS 联调
@@ -43,9 +42,6 @@
 param(
     [ValidateSet('local', 'docker', 'intranet', 'k8s', 'online')]
     [string]$Mode = 'local',
-
-    [ValidateSet('login', 'match', 'all')]
-    [string]$Profile = 'login',
 
     # online 环境:test=测试服集群 / prod=生产 kbs 集群(不同 kube-context,prod 双重确认)
     [ValidateSet('test', 'prod')]
@@ -271,7 +267,7 @@ function Invoke-Local {
     }
     Write-Step "local 模式:基础设施(docker) + 19 个 go 服务(宿主进程)"
     Write-Info "策划本地联调用这个;服务可在 VS Code 断点调试。"
-    & "$ScriptDir/dev_all.ps1" -Profile $Profile
+    & "$ScriptDir/dev_all.ps1"
 }
 
 # ===== docker 模式(全容器)=====
