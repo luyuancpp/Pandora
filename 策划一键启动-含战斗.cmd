@@ -4,11 +4,9 @@ rem ============================================================
 rem  Pandora 后端  策划一键启动-含战斗(双击即用)
 rem ------------------------------------------------------------
 rem  本地完整战斗版:能进大厅、匹配、进 battle DS 打一局。
-rem  与「策划一键启动.cmd」(docker 版)的区别:
-rem    - docker 版:只跑 15 个后端服务,不含战斗 DS(战斗 DS 是 Windows
-rem      程序,跑不进 Linux 容器)。
-rem    - 本版:后端走宿主进程,匹配成局后自动拉起本机的
-rem      Windows DS(PandoraServer.exe)进战斗。
+rem  后端走宿主进程,匹配成局后自动拉起本机的
+rem  Windows DS(PandoraServer.exe)进战斗。
+rem  (docker 全容器版 DS=mock,跑不进真实战斗 DS,故不再单独提供入口脚本。)
 rem
 rem  这是「完全本地一键版」:脚本会自动准备环境(缺 Go / Docker 自动
 rem  winget 安装)、起基础设施(docker)、起后端 go 服务、并拉起战斗 DS。

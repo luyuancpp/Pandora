@@ -12,16 +12,15 @@
   真正的构建/启动仍复用那条已验证的链路,不重复造轮子。
 
 .EXAMPLE
-  双击 仓库根目录\策划一键启动.cmd          # 启动整套后端(docker,不含战斗 DS)
-  双击 仓库根目录\策划一键停止.cmd          # 停止
-  双击 仓库根目录\策划一键启动-含战斗.cmd   # 本地战斗版(宿主 go 进程 + Windows DS)
-  双击 仓库根目录\内网服务器一键启动.cmd     # 内网服务器(全容器 + 绑内网 IP,供策划客户端连)
-  pwsh tools/scripts/play.ps1                # 启动(docker)
-  pwsh tools/scripts/play.ps1 -Intranet     # 内网服务器(绑内网 IP,打印给策划的连接地址)
+  双击 仓库根目录\策划一键启动-含战斗.cmd        # 本地战斗版(宿主 go 进程 + 本机 Windows DS)
+  双击 仓库根目录\策划一键停止.cmd               # 停止(含战斗版)
+  双击 仓库根目录\内网服务器一键启动-含战斗.cmd  # 内网服务器战斗版(宿主 go + Windows DS + 绑内网 IP)
+  双击 仓库根目录\内网服务器一键停止.cmd         # 停止(内网服务器战斗版)
   pwsh tools/scripts/play.ps1 -Battle       # 本地战斗版
+  pwsh tools/scripts/play.ps1 -Battle -Intranet    # 内网服务器战斗版(绑内网 IP,供局域网策划连)
   pwsh tools/scripts/play.ps1 -Battle -OpenEditor  # 启动后端后打开 UE Editor 当客户端
   pwsh tools/scripts/play.ps1 -Battle -OpenClient  # 启动后端后打开已打包 Windows 客户端
-  pwsh tools/scripts/play.ps1 -Stop         # 停止
+  pwsh tools/scripts/play.ps1 -Battle -Stop # 停止
   pwsh tools/scripts/play.ps1 -Status       # 看状态
 #>
 [CmdletBinding()]
@@ -554,8 +553,8 @@ if ($rc -eq 0) {
     Write-Ok '后端已启动!'
     Write-Host '  - 客户端网关(Envoy): https://127.0.0.1:8443' -ForegroundColor Green
     Write-Host '  - docker 模式 DS=mock,只能测登录/业务;要进真实 Hub/Battle DS 请用 -Battle。' -ForegroundColor Yellow
-    Write-Host '  - 看运行状态:  双击 策划一键启动.cmd 旁边的 -Status,或 pwsh tools/scripts/play.ps1 -Status' -ForegroundColor DarkGray
-    Write-Host '  - 停止:        双击 策划一键停止.cmd' -ForegroundColor DarkGray
+    Write-Host '  - 看运行状态:  pwsh tools/scripts/play.ps1 -Status' -ForegroundColor DarkGray
+    Write-Host '  - 停止:        pwsh tools/scripts/play.ps1 -Stop' -ForegroundColor DarkGray
     Maybe-OpenUeClient
 } else {
     Write-Err '启动过程中出错了,请把上面的红色 [ERR] 信息发给后端同学。'
